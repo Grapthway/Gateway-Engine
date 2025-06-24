@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grapthway :: Engineering Manual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6; /* blue-500 */
+            --secondary: #10b981; /* green-500 */
+            --dark: #111827; /* gray-900 */
+            --light: #f9fafb; /* gray-50 */
+            --gray: #4b5563; /* gray-600 */
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--gray); }
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link.active {
+            border-left: 4px solid var(--primary);
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+            font-weight: 600;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        pre {
+            border-radius: 8px;
+            overflow-x: auto;
+            padding: 1.5rem;
+            background-color: #1e293b; /* slate-800 */
+            color: #f8fafc; /* slate-50 */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+        }
+        .code-block { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #334155; /* slate-700 */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
+        .copy-btn:hover { opacity: 1; background-color: #475569; }
+        .section-title {
+             border-bottom: 2px solid #e5e7eb;
+             padding-bottom: 0.75rem;
+        }
+        .diagram-container { 
+            background: white; 
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .step-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .tip-box {
+            background-color: #dbeafe;
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .troubleshooting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .issue-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .issue-card h4 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        .issue-card h4 i {
+            margin-right: 0.5rem;
+        }
+        .grid-cols-responsive {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+        .edition-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        .edition-card:hover {
+            transform: translateY(-5px);
+        }
+        .edition-card.featured {
+            transform: scale(1.05);
+            border: 2px solid var(--primary);
+            z-index: 10;
+        }
+        .edition-card.featured:hover {
+            transform: scale(1.07);
+        }
+        .feature-list li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+        }
+        .feature-list li i {
+            color: var(--primary);
+            margin-right: 0.5rem;
+            margin-top: 0.2rem;
+        }
+        .example-tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 1rem;
+        }
+        .example-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .example-tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .example-content {
+            display: none;
+        }
+        .example-content.active {
+            display: block;
+        }
+        .architecture-diagrams {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        @media (min-width: 1024px) {
+            .architecture-diagrams {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white shadow-lg p-6 hidden md:block sticky top-0 h-screen">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl font-bold text-gray-800">
+                    <i class="fas fa-project-diagram text-blue-500 mr-2"></i>Grapthway
+                </h1>
+                <p class="text-sm text-gray-500 mt-1">Engineering Manual</p>
+            </div>
+            <nav>
+                <ul class="space-y-2">
+                    <li><a href="#overview" class="block py-2.5 px-4 rounded nav-link active">Overview</a></li>
+                    <li><a href="#architecture" class="block py-2.5 px-4 rounded nav-link">Architecture</a></li>
+                    <li><a href="#installation" class="block py-2.5 px-4 rounded nav-link">Installation</a></li>
+                    <li><a href="#pipelines" class="block py-2.5 px-4 rounded nav-link">Middleware Pipelines</a></li>
+                    <li><a href="#stitching" class="block py-2.5 px-4 rounded nav-link">Schema Stitching</a></li>
+                    <li><a href="#observability" class="block py-2.5 px-4 rounded nav-link">Observability</a></li>
+                    <li><a href="#diagnostics" class="block py-2.5 px-4 rounded nav-link">Diagnostics & Troubleshooting</a></li>
+                    <li><a href="#enterprise" class="block py-2.5 px-4 rounded nav-link">Enterprise Edition</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-12">
+            <!-- Header -->
+            <header class="mb-16 text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-dark mb-4 tracking-tight">
+                    Grapthway Engineering Manual
+                </h1>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    The complete guide to orchestrating your microservices with the Grapthway declarative GraphQL gateway.
+                </p>
+                <div class="mt-8 flex flex-wrap justify-center gap-4">
+                    <a href="#installation" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-rocket mr-2"></i>Quick Start
+                    </a>
+                    <a href="https://github.com/farisbahdlor/grapthway" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 shadow-lg">
+                        <i class="fab fa-github mr-2"></i>View on GitHub
+                    </a>
+                </div>
+            </header>
+
+            <!-- Overview -->
+            <section id="overview" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Overview</h2>
+                <p class="mb-6 text-gray-600 mx-auto">
+                    Grapthway is an advanced GraphQL API gateway designed for microservices orchestration. It provides dynamic schema composition, middleware pipelines for cross-cutting concerns, and comprehensive observability tools to manage complex distributed systems.
+                </p>
+                <p class="mb-10 text-gray-600 mx-auto">
+                    Grapthway solves the complexity of managing GraphQL APIs in microservices environments by providing:
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div class="bg-white p-6 rounded-xl border">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
+                            <i class="fas fa-network-wired text-blue-500 mr-3"></i>
+                            Unified GraphQL API
+                        </h3>
+                        <p class="text-gray-600">
+                            Seamlessly expose a single GraphQL endpoint across all your microservices, simplifying client interactions.
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
+                            <i class="fas fa-sitemap text-green-500 mr-3"></i>
+                            Cross-Service Data Composition
+                        </h3>
+                        <p class="text-gray-600">
+                            Combine data from multiple services without creating tight coupling between them.
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
+                            <i class="fas fa-exchange-alt text-purple-500 mr-3"></i>
+                            Transactional Workflows
+                        </h3>
+                        <p class="text-gray-600">
+                            Implement complex, multi-step transactions that span across different services.
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
+                            <i class="fas fa-chart-line text-yellow-500 mr-3"></i>
+                            Centralized Observability
+                        </h3>
+                        <p class="text-gray-600">
+                            Monitor and debug your entire distributed system from a single dashboard.
+                        </p>
+                    </div>
+                </div>
+                
+                <h3 class="text-2xl font-semibold text-dark mb-6">Core Features</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-xl feature-card">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 ring-8 ring-blue-50">
+                            <i class="fas fa-puzzle-piece text-blue-600 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-dark mb-3">Declarative Pipelines</h3>
+                        <p class="text-gray-600">
+                            Define complex, multi-step workflows for authentication, data enrichment, and transactional logic in simple JSON—no custom gateway code required.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl feature-card">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 ring-8 ring-green-50">
+                            <i class="fas fa-code-branch text-green-600 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-dark mb-3">Dynamic Schema Stitching</h3>
+                        <p class="text-gray-600">
+                            Automatically compose a unified GraphQL schema from multiple microservices. Grapthway adapts in real-time as services register, update, or go offline.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl feature-card">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 ring-8 ring-purple-50">
+                            <i class="fas fa-binoculars text-purple-600 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-dark mb-3">Deep Observability</h3>
+                        <p class="text-gray-600">
+                            Gain critical insights with a real-time admin dashboard, live log streaming via WebSockets, and categorized logs for gateway, admin, and schema activities.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl feature-card">
+                         <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6 ring-8 ring-yellow-50">
+                            <i class="fas fa-bolt text-yellow-600 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-dark mb-3">Scalable Architecture</h3>
+                        <p class="text-gray-600">
+                            Choose between in-memory storage for development or Redis for production-grade persistence and scalability. Native support for GraphQL subscriptions over WebSockets.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-sync-alt text-blue-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Context Propagation</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Automatic context passing via X-Ctx-* headers across services</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-undo text-green-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Error Handling & Rollback</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Transactional rollback capabilities for distributed operations</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-heartbeat text-purple-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Service Health Monitoring</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Automatic health checks via periodic service announcements</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-balance-scale text-yellow-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Load Balancing</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Round-robin distribution across service instances</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-trash-alt text-red-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Automatic Cleanup</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Services not seen for 30 seconds are automatically removed</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-boxes text-indigo-500 text-xl mr-2"></i>
+                            <h4 class="font-bold text-lg">Multi-Edition Support</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">Community (free) and Enterprise editions available</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture -->
+            <section id="architecture" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">System Architecture</h2>
+                
+                <div class="architecture-diagrams">
+                    <div class="bg-white p-8 rounded-xl shadow-lg border">
+                        <h3 class="text-xl font-semibold mb-4">Component Architecture</h3>
+                        <div class="mermaid text-center">
+                            graph LR
+                                A[Client] -- GraphQL Request --> B(Grapthway Gateway)
+
+                                subgraph B[Grapthway Gateway]
+                                    C(Pre-Processing Pipeline)
+                                    D{Service & Schema Router}
+                                    E(Post-Processing Pipeline)
+                                end
+
+                                C -- "2. Route Request" --> D
+                                D -- "3. Forward to" --> F[Service A]
+                                D -- "3. Forward to" --> G[Service B]
+                                F -- "4. Response" --> E
+                                G -- "4. Response" --> E
+                                E -- "5. Final Response" --> H[Client Response]
+                                
+                                B -. "6. Log Data" .-> I[Logging System]
+                                I --> J[Admin Dashboard]
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-8 rounded-xl shadow-lg border">
+                        <h3 class="text-xl font-semibold mb-4">Request Flow</h3>
+                        <div class="mermaid text-center">
+                            sequenceDiagram
+                                Client->>Gateway: GraphQL Request
+                                Gateway->>Middleware: Execute Pre-Pipeline
+                                Gateway->>Service Router: Route to Service
+                                Service Router->>Service Instance: Request (Round Robin)
+                                Service Instance-->>Gateway: Response
+                                Gateway->>Middleware: Execute Post-Pipeline
+                                Gateway-->>Client: Final Response
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-blue-600">1. Client Request</h3>
+                        <p>GraphQL request hits the gateway endpoint</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-green-600">2. Pre-Processing</h3>
+                        <p>Middleware pipeline executes pre-flight operations</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-purple-600">3. Routing</h3>
+                        <p>Request routed to appropriate service(s)</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-yellow-600">4. Service Execution</h3>
+                        <p>Services process request components</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-pink-600">5. Post-Processing</h3>
+                        <p>Middleware pipeline enriches response</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg step-card">
+                        <h3 class="font-bold text-lg mb-3 text-indigo-600">6. Response</h3>
+                        <p>Final response returned to client</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h3 class="font-bold text-lg mb-3 text-blue-600 flex items-center">
+                            <i class="fas fa-balance-scale mr-2"></i>
+                            Load Balancing
+                        </h3>
+                        <p class="text-gray-600">
+                            Grapthway automatically distributes requests across multiple instances of the same service using a round-robin algorithm. This ensures optimal resource utilization and high availability.
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h3 class="font-bold text-lg mb-3 text-green-600 flex items-center">
+                            <i class="fas fa-broom mr-2"></i>
+                            Automatic Cleanup
+                        </h3>
+                        <p class="text-gray-600">
+                            Services that haven't announced themselves for 30 seconds are automatically removed from the gateway. This prevents stale services from cluttering the system and ensures only healthy services receive traffic.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Installation -->
+            <section id="installation" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Installation & Setup</h2>
+                
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">1. Run with Docker</h3>
+                <p class="mb-6 text-gray-600">Choose the edition that fits your needs. The Community Edition is perfect for getting started, while the Enterprise Edition is built for production scale.</p>
+                <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-bash"># Community Edition (In-memory storage)
+docker run -d -p 5000:5000 --name my-community-gateway farisbahdlor/grapthway:community-v1.4
+
+</code></pre>
+                </div>
+                
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Storage Options</h3>
+                <div class="diagram-container mb-8">
+                    <div class="mermaid">
+                        graph LR
+                            A[Gateway] -->|Runtime Data| B[In-Memory]
+                            A -->|Persistent Data| C[Redis]
+                            B --> D[Fast Development]
+                            C --> E[Production Ready]
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h4 class="font-bold text-lg mb-3 text-blue-600">In-Memory Storage</h4>
+                        <ul class="list-disc pl-5 text-gray-600">
+                            <li>Default for Community Edition</li>
+                            <li>Ideal for development and testing</li>
+                            <li>No external dependencies</li>
+                            <li>Data is lost when gateway restarts</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h4 class="font-bold text-lg mb-3 text-green-600">Redis Storage</h4>
+                        <ul class="list-disc pl-5 text-gray-600">
+                            <li>Required for Enterprise Edition</li>
+                            <li>Persistent storage for schemas and configs</li>
+                            <li>Supports high availability deployments</li>
+                            <li>Production-ready solution</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">2. Obtain Access Tokens</h3>
+                <p class="mb-6 text-gray-600">On first launch, you must generate your unique admin tokens. These are required to access protected administrative endpoints. <b>Store them securely.</b></p>
+                 <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-bash">curl http://localhost:5000/start</code></pre>
+                </div>
+                
+                <div class="tip-box mb-8">
+                    <p class="text-blue-800">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        After starting the gateway, visit the <code>/start</code> endpoint to get your access tokens
+                    </p>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">3. Register Your Microservice</h3>
+                <p class="mb-6 text-gray-600">From your microservice, periodically send a `POST` request to the gateway's `/health` endpoint. This allows Grapthway to discover your service, retrieve its schema, and keep its status updated.</p>
+                <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-javascript">// In your service's startup logic
+async function registerWithGateway() {
+  const adminToken = 'PASTE_YOUR_ADMIN_TOKEN_HERE';
+  const response = await fetch(`http://gateway-host:5000/health?token=${adminToken}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service: 'payment-service',
+      url: 'http://payment-service-internal:4000/graphql',
+      subgraph: 'billing', // Optional: group services into subgraphs
+      schema: `type Query { ... }`, // Push schema directly for performance
+      middlewareMap: { /* ... pipeline definitions ... */ },
+      stitchingConfig: { /* ... stitching definitions ... */ }
+    })
+  });
+  
+  if (response.ok) {
+    console.log('Service registered with Grapthway successfully');
+  } else {
+    console.error('Failed to register with Grapthway:', await response.text());
+  }
+}
+
+// Announce every 30 seconds to stay "alive"
+setInterval(registerWithGateway, 30000);</code></pre>
+                </div>
+                
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Service Announcement
+                    </h3>
+                    <p class="text-gray-700">
+                        Services must announce themselves to the gateway every 30 seconds to maintain their registration. If a service fails to announce for more than 30 seconds, it will be automatically removed from the gateway along with its associated schemas and pipelines.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Middleware Pipeline -->
+            <section id="pipelines" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Middleware Pipelines</h2>
+                <p class="mb-10 text-gray-600">Pipelines are the core of Grapthway's orchestration engine. They allow you to define declarative, multi-step workflows that execute before (`pre`) and after (`post`) your main GraphQL operation.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-xl border">
+                        <h3 class="text-2xl font-semibold text-dark mb-4">Pre-Flight Pipeline</h3>
+                        <p class="text-gray-600 mb-4">Executes before the request is routed to the downstream service. Ideal for:</p>
+                        <ul class="list-disc pl-5 space-y-3 text-gray-600">
+                            <li><b class="text-gray-700">Authentication & Authorization:</b> Verify tokens and permissions.</li>
+                            <li><b class="text-gray-700">Context Injection:</b> Fetch user data and add it to the request context for later use.</li>
+                            <li><b class="text-gray-700">Transactional Logic:</b> Reserve inventory or create transaction logs before proceeding.</li>
+                            <li><b class="text-gray-700">Input Validation:</b> Perform complex validation across multiple services.</li>
+                            <li>Supports synchronous and concurrent execution</li>
+                            <li>Error handling with rollback capabilities</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl border">
+                        <h3 class="text-2xl font-semibold text-dark mb-4">Post-Flight Pipeline</h3>
+                        <p class="text-gray-600 mb-4">Executes after the downstream service returns a response. Ideal for:</p>
+                        <ul class="list-disc pl-5 space-y-3 text-gray-600">
+                            <li><b class="text-gray-700">Data Enrichment:</b> Augment the response by fetching related data from other services.</li>
+                            <li><b class="text-gray-700">Response Transformation:</b> Format, filter, or restructure the final output.</li>
+                            <li><b class="text-gray-700">Side Effects:</b> Trigger notifications, analytics events, or cleanup tasks.</li>
+                            <li><b class="text-gray-700">Concurrent Operations:</b> Fire-and-forget tasks that don't need to block the response.</li>
+                            <li>Access to main service response data</li>
+                            <li>Results merged into final response</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Example: Checkout Pipeline</h3>
+                <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-javascript">// This configuration is sent in the `middlewareMap` during service registration.
+const MIDDLEWARE_MAP = {
+  // This entire block defines a middleware pipeline for the 'payCart' GraphQL field.
+  "payCart": {
+    // 'pre' steps run in sequence *before* the main 'payCart' resolver is called.
+    "pre": [
+      {
+        "service": "auth-service", // The downstream microservice to call for this step.
+        "field": "getUserData", // The specific GraphQL field (query or mutation) to execute on that service.
+        "passHeaders": ["Authorization"], // Pass the original request's auth header.
+        "selection": ["user { id }"], // The data fields to select from the 'getUserData' response.
+        // The result of the 'user' field will be put into the context with the key 'user'.
+        "assign": { "user": "user" }, // Saves data from the step's response into the pipeline's context for later steps.
+        "concurrent": false // This is a blocking step; the gateway will wait for it to complete before proceeding.
+      },
+      {
+        "service": "cart-service",
+        "field": "getCartItems",
+        "passHeaders": ["Authorization"], // Gateway automatically adds 'X-Ctx-User' header from the context.
+        "selection": ["id", "storeId", "productId"],
+        // The entire result of 'getCartItems' is put into the context with the key 'cartItems'.
+        // An empty string for the value means "assign the entire result of the field".
+        "assign": { "cartItems": "" },
+        "concurrent": false, // This is a blocking step.
+        // Defines what happens if this specific step fails.
+        "onError": {
+          // If this step fails, the following rollback steps are executed.
+          // A list of compensating actions to run. The gateway will also rollback any previous pre-pipeline steps.
+          "rollback": [
+            {
+              "service": "inventory-service",
+              "field": "releaseItems",
+              // NOTE: 'releaseItems' service MUST read 'X-Ctx-CartItems' header for data.
+              // 'argsMapping' is NOT supported here.
+              "concurrent": true // The rollback step is "fire-and-forget"; the gateway doesn't wait for its response.
+            },
+            {
+              "service": "log-service",
+              "field": "refundItemsLog",
+              // NOTE: 'refundItemsLog' service MUST read 'X-Ctx-CartItems' header for data.
+              "concurrent": true
+            }
+          ]
+        }
+      }
+    ],
+    // 'post' steps run *after* the main 'payCart' resolver successfully returns data. They are used for data enrichment.
+    "post": [
+      {
+        "service": "balance-service", // The service to call for additional data.
+        "field": "getUserBalance", // The field that provides the enrichment data.
+        "concurrent": false, // A blocking enrichment; the gateway waits for this data before returning the final response.
+        // The 'userId' value is taken from the main 'payCart' resolver's response.
+        // Maps a value from the main resolver's result ('userId') to an argument for the enrichment query.
+        "argsMapping": { "userId": "userId" },
+        "selection": ["id", "amount", "userId", "updatedAt"], // The fields to request from the enrichment service.
+        // The result of 'getUserBalance' is assigned to the 'finalBalance' field in the final response.
+        // Merges the data from this step into the final GraphQL response sent to the client.
+        "assign": { "finalBalance": "" }
+      }
+    ]
+  }
+}</code></pre>
+                </div>
+                
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Pipeline Examples</h3>
+                
+                <div class="example-tabs mb-6">
+                    <div class="example-tab active" data-target="easy-example">Basic Auth</div>
+                    <div class="example-tab" data-target="medium-example">Cart Checkout</div>
+                    <div class="example-tab" data-target="complex1-example">Distributed Transaction</div>
+                    <div class="example-tab" data-target="complex2-example">Multi-Service Enrichment</div>
+                </div>
+                
+                <div class="example-content active" id="easy-example">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Easy: Basic Auth Pre-Processor</h4>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">{
+  "secureData": {
+    "pre": [{
+      "service": "auth-service",
+      "field": "validateToken",
+      "operation": "query",
+      "concurrent": false,
+      "passHeaders": ["Authorization"],
+      "onError": {
+        "stop": true
+      }
+    }]
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="example-content" id="medium-example">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Medium: Cart Checkout Flow</h4>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">{
+  "payCart": {
+    "pre": [
+      {
+        "service": "auth",
+        "field": "getUser",
+        "passHeaders": ["Authorization"],
+        "assign": { "user": "" }
+      },
+      {
+        "service": "cart",
+        "field": "getCartItems",
+        // The 'cart' service must use the 'X-Ctx-User' header.
+        "assign": { "cart": "" }
+      }
+    ],
+    "post": [
+      {
+        "service": "payment",
+        "field": "processPayment",
+        "argsMapping": {
+          // These fields must be present in the response from the main 'payCart' resolver.
+          // The 'payCart' resolver logic should access the pre-pipeline context
+          // and return an object like: { "userId": "some-id", "cartTotal": 123.45, ... }
+          "userId": "userId",
+          "amount": "cartTotal"
+        }
+      }
+    ]
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="example-content" id="complex1-example">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Complex: Distributed Transaction</h4>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">{
+  "placeOrder": {
+    "pre": [
+      {
+        "service": "auth",
+        "field": "verifyUser",
+        "concurrent": false
+      },
+      {
+        "service": "inventory",
+        "field": "reserveItems",
+        "concurrent": false,
+        "assign": { "reservation": "" },
+        "onError": {
+          "rollback": [
+            {
+              "service": "inventory",
+              "field": "releaseItems"
+              // The 'inventory' service must be designed to read the 'X-Ctx-Reservation' header
+              // to get the ID of the reservation to release.
+            }
+          ]
+        }
+      },
+      {
+        "service": "payment",
+        "field": "authorizePayment",
+        "concurrent": false,
+        "assign": { "authorization": "" },
+        "onError": {
+          "stop": true,
+          "rollback": [
+            {
+              "service": "payment",
+              "field": "cancelAuthorization"
+              // The 'payment' service must read the 'X-Ctx-Authorization' header.
+            }
+          ]
+        }
+      }
+    ],
+    "post": [
+      { "service": "order", "field": "createOrder" },
+      { "service": "notification", "field": "sendConfirmation", "concurrent": true }
+    ]
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="example-content" id="complex2-example">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Complex: Multi-Service Enrichment</h4>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">{
+  "getProductDetails": {
+    "post": [
+      {
+        "service": "review-service",
+        "field": "getProductReviews",
+        "argsMapping": { "productId": "id" },
+        "assign": { "reviews": "" },
+        "concurrent": false
+      },
+      {
+        "service": "inventory-service",
+        "field": "getStockInfo",
+        "argsMapping": { "productId": "id" },
+        "assign": { "stock": "" },
+        "concurrent": true
+      }
+    ]
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schema Stitching -->
+            <section id="stitching" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Schema Stitching</h2>
+                <p class="mb-10 text-gray-600">Schema stitching allows you to extend types defined in one service with fields resolved by another, creating a rich, interconnected data graph.</p>
+                
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 mb-8">
+                    <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center">
+                        <i class="fas fa-bolt mr-2"></i>
+                        Hot Reload & Dynamic Composition
+                    </h3>
+                    <p class="text-gray-700">
+                        Grapthway automatically composes schemas with real-time updates when services register or unregister. Features include:
+                    </p>
+                    <ul class="list-disc pl-5 mt-2 text-gray-700">
+                        <li>Automatic schema composition from services</li>
+                        <li>Real-time updates when services register/unregister</li>
+                        <li>Subgraph support for domain isolation</li>
+                        <li>Zero-downtime schema updates</li>
+                    </ul>
+                </div>
+                
+                <div class="diagram-container mb-10">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph Gateway
+                                A[Combined Schema]
+                            end
+                            
+                            subgraph Service A
+                                B[Schema A]
+                            end
+                            
+                            subgraph Service B
+                                C[Schema B]
+                            end
+                            
+                            A --> B
+                            A --> C
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mb-4">Example: Extending User with Order History</h3>
+                <p class="mb-6 text-gray-600">Imagine your `user-service` defines the `User` type. You want to add an `orderHistory` field to it, but that data lives in the `order-service`. You can declare this relationship in the `order-service`'s registration payload.</p>
+                <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-javascript">// This configuration is sent in the `stitchingConfig` during the order-service's registration.
+const STITCHING_CONFIG = {
+  // We are extending the "User" type
+  "User": {
+    // Add a new field called "orderHistory"
+    "orderHistory": {
+      "service": "order-service", // This service will resolve the field
+      "resolverField": "getOrdersByUserId", // Use this query from the order-service schema
+      // Map the `id` field from the parent `User` object to the `userId` argument of the resolver.
+      "argsMapping": { "userId": "id" } 
+    }
+  },
+  
+  // You can also add brand new root fields
+  "Query": {
+    "myOrderHistory": {
+      "service": "order-service",
+      "resolverField": "myOrderHistory" // Expose a top-level query from order-service
+    }
+  }
+};</code></pre>
+                </div>
+            </section>
+
+            <!-- Logging & Monitoring -->
+            <section id="observability" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Observability</h2>
+                <p class="mb-10 text-gray-600">Grapthway provides a suite of tools to monitor the health and performance of your gateway and connected services.</p>
+                
+                <div class="diagram-container mb-8">
+                    <div class="mermaid">
+                        graph TB
+                            A[Gateway Logs] --> B[Live WebSocket Stream]
+                            A --> C[Admin Dashboard]
+                            A --> D[File Storage]
+                            D --> E[Automatic Backup]
+                    </div>
+                </div>
+                
+                 <div class="bg-white p-8 rounded-xl border shadow-lg mb-10">
+                    <h3 class="text-2xl font-semibold text-dark mb-4 flex items-center"><i class="fas fa-tachometer-alt text-blue-500 mr-3"></i>Admin Dashboard</h3>
+                    <p class="text-gray-600">Grapthway includes a powerful, real-time web dashboard. Connect to it by providing your gateway URL and an admin token. It provides:</p>
+                    <ul class="list-disc pl-5 mt-4 space-y-2 text-gray-600">
+                        <li><b>Live Status:</b> View uptime, active services, instances, and pipeline counts.</li>
+                        <li><b>Service Explorer:</b> Browse all registered services and their instances, grouped by subgraph.</li>
+                        <li><b>Pipeline Viewer:</b> Inspect the configuration of all active middleware pipelines.</li>
+                        <li><b>Live Log Stream:</b> Watch gateway logs in real-time via a WebSocket connection.</li>
+                        <li><b>Historical Logs:</b> Query and view historical admin and schema change logs.</li>
+                    </ul>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h3 class="font-bold text-lg mb-3 text-blue-600">Gateway Logs</h3>
+                        <p>Detailed traces of request/response cycles, including pipeline execution.</p>
+                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-gateway-logs</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h3 class="font-bold text-lg mb-3 text-green-600">Admin Logs</h3>
+                        <p>A record of administrative actions like service registrations and config changes.</p>
+                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-admin-logs</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h3 class="font-bold text-lg mb-3 text-purple-600">Schema Logs</h3>
+                        <p>An audit trail of all schema registrations, updates, and removals.</p>
+                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-schema-logs</p>
+                    </div>
+                </div>
+                
+                <h3 class="text-2xl font-semibold text-dark mb-4">Log Management</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 mb-3">Retention Configuration</h4>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            <pre><code class="language-bash"># Set log retention to 7 days
+curl -X POST "http://localhost:5000/log-config?retention=7" \
+  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 mb-3">Backup Configuration</h4>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            <pre><code class="language-bash"># Configure automatic backups
+curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
+  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Diagnostics -->
+            <section id="diagnostics" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Diagnostics & Troubleshooting</h2>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-10">
+                    <h3 class="text-2xl font-semibold text-dark mb-4">Common Issues</h3>
+                    <div class="troubleshooting-grid">
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Service not appearing</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Verify service announcement frequency (30 seconds)</li>
+                                <li>Check gateway token in announcement request</li>
+                                <li>Confirm network connectivity between services</li>
+                                <li>Ensure the service name is unique</li>
+                            </ul>
+                        </div>
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Schema not updating</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Validate schema format in announcement payload</li>
+                                <li>Check for schema conflicts between services</li>
+                                <li>Confirm gateway has write access to storage</li>
+                                <li>Ensure schema version is increasing with each update</li>
+                            </ul>
+                        </div>
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Pipeline step failing</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Verify required context values are passed</li>
+                                <li>Check service health and availability</li>
+                                <li>Validate argument mapping configuration</li>
+                                <li>Review service permissions and access controls</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mb-4">Diagnostic Endpoints</h3>
+                <p class="mb-6 text-gray-600">Use these administrative GET endpoints to inspect the live state of the gateway. An admin token is required.</p>
+                <div class="grid grid-cols-responsive gap-6">
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h4 class="font-bold text-lg text-gray-800 mb-3">Service & Schema Info</h4>
+                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/service</p>
+                        <p class="text-gray-600 text-sm mb-4">Lists all currently registered services and their instances, grouped by subgraph.</p>
+                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/schema</p>
+                        <p class="text-gray-600 text-sm">Returns the raw SDL schemas for all registered services.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h4 class="font-bold text-lg text-gray-800 mb-3">Gateway Status</h4>
+                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/gateway-status</p>
+                        <p class="text-gray-600 text-sm mb-4">Provides detailed gateway metrics including uptime, edition, storage type, and counts of services, instances, and pipelines.</p>
+                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/status</p>
+                        <p class="text-gray-600 text-sm">Basic gateway status and health information.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border">
+                        <h4 class="font-bold text-lg text-gray-800 mb-3">Pipeline Configuration</h4>
+                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/get-pipelines</p>
+                        <p class="text-gray-600 text-sm">Returns the complete JSON configuration for all active middleware pipelines.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enterprise -->
+            <section id="enterprise" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Enterprise Edition</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="edition-card">
+                        <div class="bg-blue-600 text-white p-6 text-center">
+                            <h3 class="text-2xl font-bold">Community Edition</h3>
+                            <p class="mt-2">Free Forever</p>
+                        </div>
+                        <div class="p-6">
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check-circle"></i> In-memory storage</li>
+                                <li><i class="fas fa-check-circle"></i> Up to 3 services per subgraph</li>
+                                <li><i class="fas fa-check-circle"></i> Max 2 subgraphs</li>
+                                <li><i class="fas fa-check-circle"></i> 2-day log retention</li>
+                                <li><i class="fas fa-check-circle"></i> Basic observability</li>
+                                <li><i class="fas fa-check-circle"></i> Community support</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="edition-card featured">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
+                            <h3 class="text-2xl font-bold">Enterprise Edition</h3>
+                            <p class="mt-2">Production Ready</p>
+                        </div>
+                        <div class="p-6">
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check-circle"></i> Redis persistence</li>
+                                <li><i class="fas fa-check-circle"></i> Unlimited services/subgraphs</li>
+                                <li><i class="fas fa-check-circle"></i> Custom log retention</li>
+                                <li><i class="fas fa-check-circle"></i> Priority support</li>
+                                <li><i class="fas fa-check-circle"></i> Advanced diagnostics</li>
+                                <li><i class="fas fa-check-circle"></i> High availability deployment</li>
+                                <li><i class="fas fa-check-circle"></i> SLA-backed support</li>
+                                <li><i class="fas fa-check-circle"></i> Custom extensions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-8 text-dark shadow-2xl">
+                    <div class="text-center">
+                        <h3 class="text-3xl text-white font-bold mb-4">Ready for Production Scale?</h3>
+                        <p class="max-w-2xl text-white mx-auto mb-8">The Enterprise Edition unlocks Grapthway's full potential for mission-critical applications.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-dark mb-8">
+                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
+                                <i class="fas fa-database text-3xl text-blue-500 mb-4"></i>
+                                <p class="font-bold">Redis Persistence</p>
+                                <p class="text-sm">High-performance, persistent storage for stateful, scalable deployments.</p>
+                            </div>
+                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
+                                <i class="fas fa-infinity text-3xl text-purple-500 mb-4"></i>
+                                <p class="font-bold">Unlimited Scale</p>
+                                <p class="text-sm">No limits on the number of services, instances, or subgraphs.</p>
+                            </div>
+                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
+                                <i class="fas fa-headset text-3xl text-green-500 mb-4"></i>
+                                <p class="font-bold">Priority Support</p>
+                                <p class="text-sm">Direct access to our engineering team for support and feature requests.</p>
+                            </div>
+                        </div>
+                        <a href="mailto:fargan109@gmail.com" class="inline-block bg-white hover:bg-gray-200 text-indigo-600 font-bold py-3 px-8 rounded-lg transition text-lg shadow-lg hover:scale-105">
+                            Contact Sales for a License
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="border-t pt-10 mt-16 text-center text-gray-500">
+                <p>
+                    Crafted with ❤️ by <a href="https://github.com/farisbahdlor" class="text-blue-600 hover:underline font-semibold">@farisbahdlor</a>
+                </p>
+                <p class="mt-2 text-sm">
+                    &copy; 2025 Grapthway Project. Community and Enterprise editions available.
+                </p>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                background: '#FFFFFF',
+                primaryColor: '#F9FAFB',
+                primaryTextColor: '#111827',
+                lineColor: '#d1d5db',
+                textColor: '#374151',
+            },
+            securityLevel: 'loose'
+        });
+        
+        // Copy button functionality
+        function copyCode(button) {
+            const pre = button.nextElementSibling;
+            const code = pre.querySelector('code');
+            const text = code.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.innerHTML;
+                button.innerHTML = 'Copied!';
+                button.classList.add('bg-green-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-green-500');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+        
+        // Scroll spy for navigation
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 150) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        }, { passive: true });
+        
+        // Example tabs functionality
+        const tabs = document.querySelectorAll('.example-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const target = tab.getAttribute('data-target');
+                document.getElementById(target).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
