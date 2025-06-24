@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #3b82f6; --secondary: #10b981; --dark: #1f2937;
+            --light: #f9fafb; --gray: #6b7280; --danger: #ef4444; --warning: #f59e0b;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .tab.active { border-color: var(--primary); color: var(--primary); background-color: white; }
+        .log-container { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+        #login-modal, #details-modal { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .modal-content { animation: fadeIn 0.2s ease-out; }
+        /* Styles for collapsible logs */
+        .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .log-entry.open .collapsible-content { max-height: 1000px; /* Increased max-height */ }
+    </style>
+</head>
+<body class="h-full bg-gray-100 text-gray-800">
+
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all modal-content">
+            <div class="text-center">
+                <i class="fa-solid fa-shield-halved text-5xl text-primary mx-auto"></i>
+                <h2 class="text-2xl font-bold text-dark mt-4">Gateway Access</h2>
+                <p class="text-gray mt-2">Please enter your gateway URL and access token.</p>
+            </div>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div>
+                    <label for="gateway-url" class="text-sm font-medium text-gray-700">Gateway URL</label>
+                    <div class="mt-1 relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="server" class="w-5 h-5 text-gray-400"></i></div>
+                        <input type="text" id="gateway-url" placeholder="http://localhost:5000" required class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                <div>
+                    <label for="token" class="text-sm font-medium text-gray-700">Access Token</label>
+                     <div class="mt-1 relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="key-round" class="w-5 h-5 text-gray-400"></i></div>
+                        <input type="password" id="token" placeholder="Your access token" required class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">Connect</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="details-modal" class="fixed inset-0 z-40 flex items-center justify-center p-4 hidden" onclick="closeDetailsModal()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content" onclick="event.stopPropagation()">
+            <div id="details-modal-content" class="p-8"></div>
+        </div>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 md:p-6 lg:p-8 hidden relative">
+        <div id="logout-container" class="absolute top-4 right-4 md:top-6 md:right-8">
+            <button id="logout-button" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors flex items-center">
+                <i data-lucide="log-out" class="w-5 h-5 mr-2"></i>Logout
+            </button>
+        </div>
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-dark tracking-tight"><i class="fa-solid fa-project-diagram text-primary"></i> Gateway Monitor</h1>
+            <p class="text-lg text-gray mt-2">Real-time monitoring of services, pipelines, and logs.</p>
+        </header>
+
+        <div class="tabs flex border-b border-gray-200 mb-6 overflow-x-auto">
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="status"><i data-lucide="activity" class="inline-block w-5 h-5 mr-2"></i>Status</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="services"><i data-lucide="server-cog" class="inline-block w-5 h-5 mr-2"></i>Services</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="pipelines"><i data-lucide="milestone" class="inline-block w-5 h-5 mr-2"></i>Pipelines</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="logs"><i data-lucide="terminal" class="inline-block w-5 h-5 mr-2"></i>Live Logs</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="admin-logs"><i data-lucide="user-cog" class="inline-block w-5 h-5 mr-2"></i>Admin Logs</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="schema-logs"><i data-lucide="file-text" class="inline-block w-5 h-5 mr-2"></i>Schema Logs</button>
+        </div>
+
+        <div class="tab-content fade-in" id="status-tab"></div>
+        <div class="tab-content hidden fade-in" id="services-tab"></div>
+        <div class="tab-content hidden fade-in" id="pipelines-tab"></div>
+        <div class="tab-content hidden fade-in" id="logs-tab"><div class="log-container bg-dark text-light p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="log-container"></div></div>
+        <div class="tab-content hidden fade-in" id="admin-logs-tab"><div class="bg-white p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="admin-log-container"></div></div>
+        <div class="tab-content hidden fade-in" id="schema-logs-tab"><div class="bg-white p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="schema-log-container"></div></div>
+    </div>
+
+    <script>
+        // --- App State & Config ---
+        let config = { gatewayUrl: '', token: '' };
+        let state = { services: null, pipelines: null, status: null, adminLogs: [], schemaLogs: [] };
+        let oldState = JSON.parse(JSON.stringify(state));
+        let logSocket;
+        let fetchInterval;
+
+        // --- DOM Elements ---
+        const loginModal = document.getElementById('login-modal');
+        const loginForm = document.getElementById('login-form');
+        const mainContent = document.getElementById('main-content');
+        const detailsModal = document.getElementById('details-modal');
+        const detailsModalContent = document.getElementById('details-modal-content');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // --- Utility Functions ---
+        const apiFetch = async (endpoint) => {
+            try {
+                const separator = endpoint.includes('?') ? '&' : '?';
+                const url = `${config.gatewayUrl}${endpoint}${separator}token=${config.token}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        logout();
+                    }
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Failed to fetch ${endpoint}:`, error);
+                return null;
+            }
+        };
+
+        const renderIcon = (iconName, classes = "w-5 h-5") => {
+            const icon = lucide.icons[iconName];
+            return icon ? icon.toSvg({ class: classes }) : '';
+        };
+
+        const syntaxHighlight = (json) => {
+            if (!json) return '';
+            let jsonData = json;
+            if (typeof json !== 'string') {
+                jsonData = JSON.stringify(json, undefined, 2);
+            }
+            jsonData = jsonData.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return jsonData.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+                let cls = 'text-green-400'; // number
+                if (/^"/.test(match)) {
+                    cls = /:$/.test(match) ? 'text-sky-300' : 'text-amber-300'; // key or string
+                } else if (/true|false/.test(match)) {
+                    cls = 'text-purple-400'; // boolean
+                } else if (/null/.test(match)) {
+                    cls = 'text-gray-500'; // null
+                }
+                return `<span class="${cls}">${match}</span>`;
+            });
+        };
+
+        const showDetailsModal = (title, content) => {
+            detailsModalContent.innerHTML = `<h2 class="text-2xl font-bold text-dark mb-6">${title}</h2>${content}`;
+            detailsModal.classList.remove('hidden');
+        };
+
+        const closeDetailsModal = () => detailsModal.classList.add('hidden');
+        
+        // --- Rendering Functions ---
+        const renderStatus = (data) => {
+            const container = document.getElementById('status-tab');
+            if (!data) {
+                container.innerHTML = `<div class="text-center p-12 text-gray-500"><div class="text-3xl mb-4">${renderIcon('cloud-off')}</div>Could not fetch gateway status.</div>`;
+                return;
+            }
+            const uptime = data.uptime || '0s';
+            const stats = [
+                { icon: 'server', label: 'Services', value: data.total_services || 0 },
+                { icon: 'server-cog', label: 'Instances', value: data.total_instances || 0 },
+                { icon: 'milestone', label: 'Pipelines', value: data.total_pipelines || 0 },
+                { icon: 'box-select', label: 'Subgraphs', value: data.total_subgraphs || 0 },
+            ];
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">${stats.map(stat => `
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-blue-100 text-primary p-3 rounded-full">${renderIcon(stat.icon, 'w-8 h-8')}</div>
+                        <div>
+                            <p class="text-gray-500 font-medium">${stat.label}</p>
+                            <p class="text-3xl font-bold text-dark">${stat.value}</p>
+                        </div>
+                    </div>`).join('')}
+                </div>
+                <div class="mt-8 bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-green-500">${renderIcon('shield-check', 'w-8 h-8')}</div>
+                        <div>
+                            <p class="font-bold text-lg text-dark">Gateway Operational</p>
+                            <p class="text-gray-600">Edition: <span class="font-semibold capitalize">${data.edition || 'N/A'}</span> | Storage: <span class="font-semibold capitalize">${data.storage_type || 'N/A'}</span></p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Uptime</p>
+                        <p class="font-mono text-lg font-semibold text-dark">${uptime.replace(/(\.\d{3})\d+/, '$1')}</p>
+                    </div>
+                </div>`;
+        };
+
+        const renderServices = (data) => {
+            const container = document.getElementById('services-tab');
+            if (!data || (!Object.keys(data.main).length && !Object.keys(data.subgraphs).length)) {
+                container.innerHTML = `<div class="text-center p-12 text-gray-500"><div class="text-3xl mb-4">${renderIcon('server-off')}</div>No services registered.</div>`;
+                return;
+            }
+            const allSubgraphs = { 'main': data.main, ...data.subgraphs };
+            let html = Object.entries(allSubgraphs).map(([subgraphName, services]) => {
+                if (Object.keys(services).length === 0) return '';
+                return `
+                    <div>
+                        <h2 class="text-xl font-bold text-dark mb-4 pb-2 border-b-2 border-primary/20 capitalize flex items-center">
+                            ${renderIcon('box-select', 'w-6 h-6 mr-3 text-primary')} ${subgraphName} Subgraph
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            ${Object.entries(services).map(([serviceName, serviceData]) => `
+                                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-[1.02]">
+                                    <div class="bg-dark text-white p-4 flex justify-between items-center">
+                                        <h3 class="font-bold text-lg flex items-center">${renderIcon('cube', 'w-5 h-5 mr-2')}${serviceName}</h3>
+                                        <span class="bg-primary/50 text-white text-xs font-semibold px-3 py-1 rounded-full">${(serviceData.instances || []).length} Instances</span>
+                                    </div>
+                                    <div class="p-4 space-y-2">
+                                        ${(serviceData.instances || []).map(inst => `
+                                            <div class="flex items-center justify-between text-sm p-2 rounded-md bg-gray-50">
+                                                <span class="font-mono text-gray-600 truncate">${renderIcon('link-2', 'w-4 h-4 mr-2 inline-block text-gray-400')}${inst.URL}</span>
+                                                <div class="w-3 h-3 bg-secondary rounded-full flex-shrink-0 ml-4" title="Healthy"></div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
+            }).join('');
+            container.innerHTML = `<div class="space-y-10">${html}</div>`;
+        };
+        
+        const renderPipelineSteps = (steps) => {
+            if (!steps || steps.length === 0) return '';
+            return `
+                <div class="flex flex-col md:flex-row items-stretch gap-4 overflow-x-auto pb-4">
+                    ${steps.map((step, index) => `
+                        <div class="flex-shrink-0 w-full md:w-64 bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary" 
+                                onclick='showPipelineStepDetails(${JSON.stringify(step)})'>
+                            <div class="flex justify-between items-center">
+                                <p class="font-bold text-dark flex items-center">${renderIcon('box', 'w-4 h-4 mr-2')}${step.service}</p>
+                                ${step.concurrent ? `<span class="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full" title="Concurrent">${renderIcon('zap', 'w-3 h-3 inline-block')}</span>` : ''}
+                            </div>
+                            <p class="font-mono text-sm text-gray-600 truncate">${step.field}</p>
+                            <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">${renderIcon('info', 'w-3 h-3 mr-1 inline')}Click for details</div>
+                        </div>
+                        ${index < steps.length - 1 ? `<div class="self-center text-gray-300 mx-4 hidden md:block">${renderIcon('chevron-right', 'w-8 h-8')}</div><div class="self-center text-gray-300 my-2 md:hidden">${renderIcon('chevron-down', 'w-8 h-8')}</div>` : ''}
+                    `).join('')}
+                </div>`;
+        };
+
+        const renderPipelines = (data) => {
+            const container = document.getElementById('pipelines-tab');
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = `<div class="text-center p-12 text-gray-500"><div class="text-3xl mb-4">${renderIcon('milestone')}</div>No pipelines configured.</div>`;
+                return;
+            }
+            container.innerHTML = Object.entries(data).map(([fieldKey, config]) => {
+                const hasPre = config.pre && config.pre.length > 0;
+                const hasPost = config.post && config.post.length > 0;
+                return `
+                <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                    <h3 class="text-xl font-bold text-dark flex items-center mb-4 border-b pb-3">
+                        ${renderIcon('workflow', 'w-6 h-6 mr-3 text-primary')}Pipeline for: <span class="font-mono ml-2 p-1 bg-gray-100 rounded-md text-primary">${fieldKey}</span>
+                    </h3>
+                    ${hasPre ? `
+                        <div class="mb-6">
+                            <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">${renderIcon('log-in', 'w-5 h-5 mr-2 text-gray-500')}Pre-flight Steps</h4>
+                            ${renderPipelineSteps(config.pre)}
+                        </div>
+                    ` : ''}
+                    ${hasPost ? `
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">${renderIcon('log-out', 'w-5 h-5 mr-2 text-gray-500')}Post-flight Enrichment</h4>
+                            ${renderPipelineSteps(config.post)}
+                        </div>
+                    ` : ''}
+                </div>`;
+            }).join('');
+            window.showPipelineStepDetails = (step) => {
+                const content = `<pre class="bg-dark text-light p-4 rounded-md text-sm whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(step)}</code></pre>`;
+                showDetailsModal(`Pipeline Step: ${step.service}/${step.field}`, content);
+            };
+        };
+        
+        const renderPipelineStepsInLog = (title, steps, colorClass = 'text-gray-300') => {
+            if (!steps || steps.length === 0) return '';
+            return `
+                <div class="mt-2">
+                    <strong class="${colorClass}">${title} (${steps.length})</strong>
+                    <div class="pl-4 mt-1 space-y-1">
+                        ${steps.map(step => `
+                            <div class="flex items-center text-xs">
+                                <span class="font-mono">${step.service}/${step.field}</span>
+                                ${step.concurrent ? `<span class="ml-2 text-xs font-bold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full" title="Concurrent">Async</span>` : ''}
+                                ${step.error ? `<span class="ml-2 text-red-400 truncate" title="${step.error}">- ${step.error}</span>` : ''}
+                            </div>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        const renderLogEntry = (logData) => {
+            const container = document.getElementById('log-container');
+            const { timestamp, request_address, destination_schema, failure_message, service_response, 
+                    pre_success_steps, pre_failure_steps, post_success_steps, post_failure_steps } = logData;
+            
+            const isError = failure_message || (pre_failure_steps && pre_failure_steps.length > 0);
+            const colorClass = isError ? 'text-danger' : 'text-secondary';
+            const icon = isError ? renderIcon('x-circle', `w-4 h-4 mr-2 inline ${colorClass}`) : renderIcon('check-circle-2', `w-4 h-4 mr-2 inline ${colorClass}`);
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry py-2 border-b border-gray-700/50 text-sm cursor-pointer';
+            entry.onclick = () => entry.classList.toggle('open');
+
+            let summary = 'SUCCESS';
+            if (isError) {
+                summary = 'FAILURE';
+            } else if (!timestamp) {
+                summary = 'SYSTEM';
+            }
+
+            entry.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                        <span class="text-blue-400 font-mono">${new Date(timestamp || Date.now()).toLocaleTimeString()}</span>
+                        <span class="ml-4 font-mono text-gray-400">${request_address || 'UI'} &rarr; ${destination_schema || 'Stream'}</span>
+                    </div>
+                    <span class="${colorClass} font-bold flex items-center">${icon}${summary}</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="mt-2 pl-4 border-l-2 border-gray-600 text-gray-300 space-y-1">
+                        ${failure_message ? `<div class="font-mono text-red-400"><strong>Reason:</strong> ${failure_message}</div>` : ''}
+                        ${renderPipelineStepsInLog('Pre-flight Success', pre_success_steps, 'text-green-400')}
+                        ${renderPipelineStepsInLog('Pre-flight Failure', pre_failure_steps, 'text-red-400')}
+                        ${renderPipelineStepsInLog('Post-flight Success', post_success_steps, 'text-green-400')}
+                        ${renderPipelineStepsInLog('Post-flight Failure', post_failure_steps, 'text-red-400')}
+                        ${service_response ? `<div class="mt-2"><strong>Service Response:</strong><pre class="bg-gray-900 p-2 rounded mt-1 text-xs whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(service_response)}</code></pre></div>` : ''}
+                    </div>
+                </div>`;
+            container.prepend(entry);
+            if(container.children.length > 200) container.removeChild(container.lastChild);
+        };
+
+        const renderAdminLogs = (logs) => {
+            const container = document.getElementById('admin-log-container');
+            if (!logs || logs.length === 0) {
+                 container.innerHTML = `<div class="text-center p-12 text-gray-500">${renderIcon('user-cog', 'w-10 h-10 mb-4 mx-auto')}No admin activities logged.</div>`;
+                 return;
+            }
+            container.innerHTML = logs.map(log => `
+                <div class="py-3 border-b border-gray-200 text-sm flex items-center justify-between">
+                    <div>
+                        <span class="font-mono text-primary mr-4">${new Date(log.timestamp).toLocaleString()}</span>
+                        <span class="text-gray-600">${log.activity}</span>
+                    </div>
+                    <span class="font-mono text-gray-400 text-xs">${log.user}</span>
+                </div>`).join('');
+        };
+        
+        const renderSchemaLogs = (logs) => {
+            const container = document.getElementById('schema-log-container');
+            if (!logs || logs.length === 0) {
+                 container.innerHTML = `<div class="text-center p-12 text-gray-500">${renderIcon('file-text', 'w-10 h-10 mb-4 mx-auto')}No schema changes logged.</div>`;
+                 return;
+            }
+            container.innerHTML = logs.map(log => `
+                 <div class="py-3 border-b border-gray-200 text-sm flex items-center justify-between">
+                    <div>
+                        <span class="font-mono text-primary mr-4">${new Date(log.timestamp).toLocaleString()}</span>
+                        <span class="font-bold text-dark mr-2">${log.schema_name}:</span>
+                        <span class="text-gray-600">${log.schema_history}</span>
+                    </div>
+                </div>`).join('');
+        };
+
+        // --- Core Logic ---
+        const fetchAllData = async () => {
+            const [services, pipelines, status, adminLogs, schemaLogs] = await Promise.all([
+                apiFetch('/service'),
+                apiFetch('/get-pipelines'),
+                apiFetch('/gateway-status'),
+                apiFetch('/get-admin-logs?max=100'),
+                apiFetch('/get-schema-logs?max=100')
+            ]);
+            
+            const newState = { services, pipelines, status, adminLogs, schemaLogs };
+
+            if (JSON.stringify(newState.status) !== JSON.stringify(oldState.status)) renderStatus(newState.status);
+            if (JSON.stringify(newState.services) !== JSON.stringify(oldState.services)) renderServices(newState.services);
+            if (JSON.stringify(newState.pipelines) !== JSON.stringify(oldState.pipelines)) renderPipelines(newState.pipelines);
+            if (JSON.stringify(newState.adminLogs) !== JSON.stringify(oldState.adminLogs)) renderAdminLogs(newState.adminLogs);
+            if (JSON.stringify(newState.schemaLogs) !== JSON.stringify(oldState.schemaLogs)) renderSchemaLogs(newState.schemaLogs);
+            
+            oldState = JSON.parse(JSON.stringify(newState));
+        };
+        
+        const connectToLogStream = () => {
+            if (logSocket) logSocket.close();
+            const wsProtocol = config.gatewayUrl.startsWith('https') ? 'wss' : 'ws';
+            const wsUrl = `${wsProtocol}://${config.gatewayUrl.split('//')[1]}/live-log?token=${config.token}`;
+            logSocket = new WebSocket(wsUrl);
+
+            logSocket.onopen = () => {
+                document.getElementById('log-container').innerHTML = '';
+                renderLogEntry({ failure_message: "Connection established." });
+            };
+            logSocket.onmessage = (event) => {
+                try { renderLogEntry(JSON.parse(event.data)); } catch (e) { console.error("Error parsing log data:", e); }
+            };
+            logSocket.onclose = () => {
+                if (!document.getElementById('login-modal').classList.contains('hidden')) return; // Don't try to reconnect if we are logged out
+                renderLogEntry({ failure_message: "Connection closed. Attempting to reconnect..."});
+                setTimeout(connectToLogStream, 3000);
+            };
+            logSocket.onerror = (error) => {
+                console.error("WebSocket Error:", error);
+                logSocket.close();
+            };
+        };
+
+        const startApp = () => {
+            loginModal.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
+            fetchAllData();
+            fetchInterval = setInterval(fetchAllData, 3000); // Fetch data every 3 seconds
+            connectToLogStream();
+
+            tabs[0].classList.add('active');
+            tabContents[0].classList.remove('hidden');
+            document.getElementById('logout-button').addEventListener('click', logout);
+            lucide.createIcons();
+        };
+
+        const showLoginModal = () => {
+            clearInterval(fetchInterval);
+            if(logSocket) {
+                logSocket.onclose = null; // prevent reconnect attempts
+                logSocket.close();
+            }
+            mainContent.classList.add('hidden');
+            loginModal.classList.remove('hidden');
+            document.getElementById('gateway-url').value = '';
+            document.getElementById('token').value = '';
+            lucide.createIcons();
+        };
+
+        const logout = () => {
+            sessionStorage.removeItem('gatewayConfig');
+            config = { gatewayUrl: '', token: '' };
+            showLoginModal();
+        };
+
+        // --- Event Listeners ---
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            config.gatewayUrl = document.getElementById('gateway-url').value.trim().replace(/\/$/, '');
+            config.token = document.getElementById('token').value.trim();
+            if (config.gatewayUrl && config.token) {
+                sessionStorage.setItem('gatewayConfig', JSON.stringify(config));
+                startApp();
+            }
+        });
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.add('hidden'));
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.remove('hidden');
+                lucide.createIcons();
+            });
+        });
+
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedConfig = sessionStorage.getItem('gatewayConfig');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+                document.getElementById('gateway-url').value = config.gatewayUrl;
+                document.getElementById('token').value = config.token;
+                startApp();
+            } else {
+                showLoginModal();
+            }
+        });
+    </script>
+</body>
+</html>
