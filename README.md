@@ -9,12 +9,18 @@
 *A declarative GraphQL gateway that transforms how you compose, orchestrate, and observe distributed systems*
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/farisbahdlor/grapthway?style=flat-square)](https://hub.docker.com/r/farisbahdlor/grapthway)
-[![GitHub Stars](https://img.shields.io/github/stars/farisbahdlor/grapthway?style=flat-square)](https://github.com/grapthway)
-[![License](https://img.shields.io/github/license/grapthway?style=flat-square)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/farisbahdlor/Grapthway?style=flat-square)](https://github.com/Grapthway)
+[![License](https://img.shields.io/github/license/Grapthway?style=flat-square)](LICENSE)
 
-[🎯 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🏗️ Examples](#-examples) • [🤝 Contributing](#-contributing)
+[🎯 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🏗️ Examples](#-examples) • [⚡ Performance](#-performance-optimization-report) • [🤝 Contributing](#-contributing)
 
 </div>
+
+---
+
+## 🆕 Current Version: v1.5
+
+**Latest Update**: Enhanced performance with optimized JSON processing, lock-free schema reloading, and improved GraphQL query handling. See [Performance Report](#-performance-optimization-report) for detailed improvements.
 
 ---
 
@@ -91,7 +97,7 @@ Choose your edition and get started in seconds:
 
 ```bash
 # 🆓 Community Edition (Perfect for development)
-docker run -d -p 5000:5000 --name my-community-gateway farisbahdlor/grapthway:community-v1.4
+docker run -d -p 5000:5000 --name my-community-gateway farisbahdlor/grapthway:community-v1.5
 ```
 
 ### 🔑 Get Your Tokens
@@ -142,7 +148,7 @@ setInterval(registerWithGateway, 30000);
 
 Transform a complex checkout flow into a declarative pipeline:
 
-```json
+```javascript
 const MIDDLEWARE_MAP = {
   // This entire block defines a middleware pipeline for the 'payCart' GraphQL field.
   "payCart": {
@@ -229,6 +235,92 @@ const stitchingConfig = {
   }
 };
 ```
+
+---
+
+## ⚡ Performance Optimization Report
+
+## Performance Improvements
+
+We've implemented key optimizations that deliver measurable performance gains while fixing critical GraphQL handling issues.
+
+### 📊 Load Test Results
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Requests/sec** | 13.97 RPS | 14.41 RPS | **+3.1%** ⬆️ |
+| **P95 Latency** | 257.23 ms | 239.72 ms | **-17.51 ms** ⬇️ |
+| **Error Rate** | 0.0% | 0.0% | Maintained |
+
+> **Test Environment**: 5 Virtual Users over 2m 20s duration
+
+### 🔧 Key Optimizations
+
+#### 1. High-Performance JSON Processing
+- **Change**: Replaced `encoding/json` with `json-iterator/go`
+- **Impact**: Faster JSON operations across all API requests, logging, and downstream communication
+
+#### 2. Lock-Free Schema Reloading
+- **Change**: Implemented atomic schema updates using `sync/atomic.Value`
+- **Impact**: Zero-downtime schema reloads with no request blocking
+- **Before**: `sync.RWMutex` caused lock contention
+- **After**: Non-blocking background schema builds with atomic swaps
+
+#### 3. GraphQL Query Optimization
+- **Fixed**: Scalar return type handling (removed unnecessary `__typename` injection)
+- **Fixed**: Input object formatting (proper GraphQL syntax instead of JSON strings)
+- **Impact**: Cleaner query generation and improved downstream service compatibility
+
+**Examples of Fixed Queries:**
+
+*Before (Broken):*
+```javascript
+# Scalar queries incorrectly added __typename
+logout(token: "abc123") { __typename }  # ❌ Invalid for String return
+
+# Input objects formatted as JSON strings
+editUser(input: "{\"name\":\"faris\",\"age\":25}")  # ❌ Invalid syntax
+```
+
+*After (Fixed):*
+```javascript
+# Scalar queries return clean values
+logout(token: "abc123")  # ✅ Proper scalar handling
+
+# Input objects use proper GraphQL syntax
+editUser(input: {name: "faris", age: 25})  # ✅ Correct formatting
+```
+
+### 🎯 Technical Benefits
+
+- **6.8% latency reduction** - Faster response times for end users
+- **Zero downtime** schema updates - No service interruption during configuration changes
+- **100% compatibility** - Drop-in JSON replacement maintains existing functionality
+- **Memory efficiency** - Reduced lock contention and reflection overhead
+
+### 🔍 Implementation Details
+
+The optimizations focus on eliminating performance bottlenecks:
+
+```go
+// Lock-free schema reloading
+func (m *Merger) ReloadSchema() {
+    // Build new schemas in background
+    newSchema := buildSchema()
+    // Atomic swap - zero blocking
+    m.schemaValue.Store(newSchema)
+}
+
+// Optimized input formatting
+func formatValue(value interface{}) string {
+    // Converts {"name":"faris"} → {name: "faris"}
+    // Handles nested objects recursively
+}
+```
+
+---
+
+*These optimizations maintain backward compatibility while delivering measurable performance improvements. No changes required to existing resolvers or schemas.*
 
 ---
 
@@ -334,7 +426,7 @@ curl "http://localhost:5000/get-pipelines?token=${ADMIN_TOKEN}"
 
 ## 📖 Documentation
 
-- 📚 **[Complete Engineering Manual](engineering-manual.md)**
+- 📚 **[Complete Engineering Manual](engineering_manual.html)**
 
 ---
 
