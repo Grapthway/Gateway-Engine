@@ -12,7 +12,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/farisbahdlor/Grapthway?style=flat-square)](https://github.com/Grapthway)
 [![License](https://img.shields.io/github/license/Grapthway?style=flat-square)](LICENSE)
 
-[🎯 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🏗️ Examples](#-examples) • [⚡ Performance](#-performance-optimization-report) • [🤝 Contributing](#-contributing)
+[🎯 Quick Start](#-quick-start) • [✨ New Features](#-smart-deployments-version-aware-registration) • [🏗️ Examples](#-advanced-examples) • [⚡ Performance](#-performance-optimization-report) • [🤝 Contributing](#-contributing)
 
 </div>
 
@@ -20,7 +20,12 @@
 
 ## 🆕 Current Version: v1.5
 
-**Latest Update**: Enhanced performance with optimized JSON processing, lock-free schema reloading, and improved GraphQL query handling. See [Performance Report](#-performance-optimization-report) for detailed improvements.
+**Latest Update**: This version introduces a sophisticated, version-aware registration engine alongside significant performance enhancements.
+
+* **Intelligent Blue-Green Deployments**: The gateway now automatically detects configuration changes (in schemas, pipelines, or stitching) to perform zero-downtime blue-green swaps.
+* **Atomic Configuration Swaps**: Service updates are now fully atomic, ensuring the gateway's state is always consistent.
+* **Global Utility Services**: Pre-pipelines can now call shared services (like authentication) from any subgraph, making them globally accessible.
+* **Enhanced Performance**: Optimized JSON processing, lock-free schema reloading, and improved GraphQL query handling. See the [Performance Report](#-performance-optimization-report) for details.
 
 ---
 
@@ -47,7 +52,7 @@ graph TB
 ### 🎭 **Declarative Pipelines**
 Transform complex workflows into simple JSON configurations. No more gateway spaghetti code.
 
-### 🧬 **Dynamic Schema Stitching** 
+### 🧬 **Dynamic Schema Stitching**  
 Services come and go—your schema adapts in real-time. Zero-downtime deployments, maximum flexibility.
 
 ### 🔬 **Deep Observability**
@@ -66,6 +71,8 @@ From development laptops to production clusters—scale with confidence using Re
 
 ### 🔥 **Core Capabilities**
 - **Unified GraphQL API** across all microservices
+- **Version-Aware Service Registration**
+- **Global (Cross-Subgraph) Pipelines**
 - **Cross-service data composition** without tight coupling  
 - **Transactional workflows** spanning multiple services
 - **Automatic service discovery** and health monitoring
@@ -76,10 +83,11 @@ From development laptops to production clusters—scale with confidence using Re
 <td width="50%">
 
 ### 🛡️ **Production Features**
+- **Automatic Blue-Green Deployment Orchestration**
 - **Redis persistence** for enterprise deployments
 - **Real-time admin dashboard** with live metrics
 - **WebSocket log streaming** for instant debugging
-- **Automatic cleanup** of stale services (30s timeout)
+- **Automatic cleanup** of stale services (60s timeout)
 - **Error handling & rollback** for distributed transactions
 - **GraphQL subscriptions** over WebSockets
 
@@ -110,6 +118,8 @@ curl http://localhost:5000/start
 
 ### 🎪 Register Your First Service
 
+Announce your service to the gateway. The gateway is smart enough to handle the rest.
+
 ```javascript
 // In your microservice
 async function registerWithGateway() {
@@ -119,16 +129,10 @@ async function registerWithGateway() {
     body: JSON.stringify({
       service: 'user-service',
       url: 'http://user-service:4000/graphql',
-      subgraph: 'core',
+      subgraph: 'auth', // Define which subgraph this service belongs to
       schema: `
-        type User {
-          id: ID!
-          email: String!
-          name: String!
-        }
-        type Query {
-          me: User
-        }
+        type User { id: ID!, email: String!, name: String! }
+        type Query { me: User }
       `,
       middlewareMap: { /* Pipeline definitions */ },
       stitchingConfig: { /* Schema extensions */ }
@@ -136,101 +140,104 @@ async function registerWithGateway() {
   });
 }
 
-// Keep your service alive
-setInterval(registerWithGateway, 30000);
+// Keep your service alive by re-announcing periodically
+setInterval(registerWithGateway, 20000);
 ```
+
+---
+
+## ✨ Smart Deployments: Version-Aware Registration
+
+Grapthway eliminates manual deployment orchestration by intelligently detecting version changes to perform zero-downtime Blue-Green deployments.
+
+When a service instance announces its health, the gateway compares its full configuration (Schema, Pipelines, and Stitching) to the currently active version.
+
+#### Real-World Example: Deploying a Breaking Change
+
+Imagine your `store-product-service` **v1 (Blue)** is live. Its `createProduct` mutation takes `name` and `price` as separate arguments.
+
+1. **You Deploy v2 (Green):** You refactor the service and change the `createProduct` mutation to accept a single `ProductInput` object. This is a breaking schema change. You deploy this new container.
+2. **"Green" Service Registers:** The new `v2` service starts and announces itself to the gateway's `/health` endpoint, sending its new schema.
+3. **Gateway Detects the Change:** The gateway's `UpdateServiceRegistration` function compares the incoming schema from `v2` with the stored schema from `v1` and sees they are different.
+4. **The Swap is Triggered:** Recognizing a new version, the gateway performs a Blue-Green Swap:
+   * It instantly **wipes its list of "blue" (v1) instances**.
+   * It creates a new active set of instances containing only the new "green" (v2) service.
+   * It **atomically replaces** the stored schema, pipelines, and stitching rules with the new ones from `v2`.
+5. **Result:** The cutover is instant. All new GraphQL requests are now routed exclusively to `store-product-service-v2` and validated against its new schema.
+
+If a subsequent instance of `v2` registers with the *same* configuration, the gateway recognizes it as a **Scale-Up Event** and simply adds it to the load-balancing pool for the active "green" version.
 
 ---
 
 ## 🏗️ Advanced Examples
 
-### 🛒 E-commerce Checkout Pipeline
+### 🛒 E-commerce Checkout Pipeline (Atomic Swaps & Global Services in Action)
 
-Transform a complex checkout flow into a declarative pipeline:
+This example demonstrates how Grapthway handles complex workflows that touch multiple services, all managed as a single, atomic configuration.
 
 ```javascript
+// This entire configuration is sent by your store-product-service
 const MIDDLEWARE_MAP = {
-  // This entire block defines a middleware pipeline for the 'payCart' GraphQL field.
+  // This pipeline runs for the 'payCart' mutation.
   "payCart": {
-    // 'pre' steps run in sequence *before* the main 'payCart' resolver is called.
+    // 'pre' steps run before the main resolver.
     "pre": [
       {
-        "service": "auth-service", // The downstream microservice to call for this step.
-        "field": "getUserData", // The specific GraphQL field (query or mutation) to execute on that service.
-        "passHeaders": ["Authorization"], // Pass the original request's auth header.
-        "selection": ["user { id }"], // The data fields to select from the 'getUserData' response.
-        // The result of the 'user' field will be put into the context with the key 'user'.
-        "assign": { "user": "user" }, // Saves data from the step's response into the pipeline's context for later steps.
-        "concurrent": false // This is a blocking step; the gateway will wait for it to complete before proceeding.
+        // 1. Call the Global 'auth-service' for Authentication.
+        //    Even if this request is for the "store" subgraph, the gateway
+        //    finds 'auth-service' in any subgraph.
+        "service": "auth-service",
+        "field": "getUserData",
+        "passHeaders": ["Authorization"],
+        "selection": ["user { id }"],
+        // 2. The result is saved to the request context as `user`.
+        "assign": { "user": "user" }
       },
       {
+        // 3. Next, call the cart service.
         "service": "cart-service",
         "field": "getCartItems",
-        "passHeaders": ["Authorization"], // Gateway automatically adds 'X-Ctx-User' header from the context.
-        "selection": ["id", "storeId", "productId"],
-        // The entire result of 'getCartItems' is put into the context with the key 'cartItems'.
-        // An empty string for the value means "assign the entire result of the field".
+        //    The gateway automatically adds the `X-Ctx-User` header from the previous step.
+        "passHeaders": ["Authorization"],
+        "selection": ["id", "storeId"],
+        // 4. The result is saved to the context as `cartItems`.
         "assign": { "cartItems": "" },
-        "concurrent": false, // This is a blocking step.
-        // Defines what happens if this specific step fails.
         "onError": {
-          // If this step fails, the following rollback steps are executed.
-          // A list of compensating actions to run. The gateway will also rollback any previous pre-pipeline steps.
-          "rollback": [
-            {
-              "service": "inventory-service",
-              "field": "releaseItems",
-              // NOTE: 'releaseItems' service MUST read 'X-Ctx-CartItems' header for data.
-              // 'argsMapping' is NOT supported here.
-              "concurrent": true // The rollback step is "fire-and-forget"; the gateway doesn't wait for its response.
-            },
-            {
-              "service": "log-service",
-              "field": "refundItemsLog",
-              // NOTE: 'refundItemsLog' service MUST read 'X-Ctx-CartItems' header for data.
-              "concurrent": true
-            }
-          ]
+          "rollback": [{ "service": "inventory-service", "field": "releaseItems" }]
         }
       }
     ],
-    // 'post' steps run *after* the main 'payCart' resolver successfully returns data. They are used for data enrichment.
+    // 'post' steps run *after* the main resolver to enrich the response.
     "post": [
       {
-        "service": "balance-service", // The service to call for additional data.
-        "field": "getUserBalance", // The field that provides the enrichment data.
-        "concurrent": false, // A blocking enrichment; the gateway waits for this data before returning the final response.
-        // The 'userId' value is taken from the main 'payCart' resolver's response.
-        // Maps a value from the main resolver's result ('userId') to an argument for the enrichment query.
-        "argsMapping": { "userId": "userId" },
-        "selection": ["id", "amount", "userId", "updatedAt"], // The fields to request from the enrichment service.
-        // The result of 'getUserBalance' is assigned to the 'finalBalance' field in the final response.
-        // Merges the data from this step into the final GraphQL response sent to the client.
-        "assign": { "finalBalance": "" }
+        "service": "balance-service",
+        "field": "getUserBalance",
+        // 5. Map the `userId` from the main resolver's output to this enrichment query's arguments.
+        "argsMapping": { "userId": "userId" }, 
+        "selection": ["amount", "updatedAt"],
+        // 6. The result is merged into the final response as `finalBalance`.
+        "assign": { "finalBalance": "" } 
       }
     ]
   }
 }
 ```
 
+This entire `MIDDLEWARE_MAP` is treated as a single, **atomic unit**. When you deploy a new version of `store-product-service` with changes to this map, the gateway swaps the entire configuration at once, ensuring perfect consistency.
+
 ### 🔗 Dynamic Schema Stitching
 
 Extend types across service boundaries seamlessly:
 
 ```javascript
-// Order service extending User type
+// In your order-service, extend the User type from auth-service.
 const stitchingConfig = {
-  "User": {
-    "orderHistory": {
+  "User": { // Target type to extend
+    "orderHistory": { // New field to add to the User type
       "service": "order-service",
       "resolverField": "getOrdersByUserId",
-      "argsMapping": { "userId": "id" }
-    }
-  },
-  "Query": {
-    "recentOrders": {
-      "service": "order-service", 
-      "resolverField": "getRecentOrders"
+      // Map the User's `id` to the `userId` argument of the resolver.
+      "argsMapping": { "userId": "id" } 
     }
   }
 };
@@ -239,8 +246,6 @@ const stitchingConfig = {
 ---
 
 ## ⚡ Performance Optimization Report
-
-## Performance Improvements
 
 We've implemented key optimizations that deliver measurable performance gains while fixing critical GraphQL handling issues.
 
@@ -317,8 +322,6 @@ func formatValue(value interface{}) string {
     // Handles nested objects recursively
 }
 ```
-
----
 
 *These optimizations maintain backward compatibility while delivering measurable performance improvements. No changes required to existing resolvers or schemas.*
 
@@ -404,10 +407,10 @@ sequenceDiagram
 
 | Issue | Solution |
 |-------|----------|
-| 🔴 Service not appearing | Check announcement frequency (30s) and network connectivity |
-| 🟡 Schema not updating | Validate schema format and check for conflicts |
-| 🟠 Pipeline step failing | Verify context values and service availability |
-| 🔵 Dashboard not loading | Confirm admin token and WebSocket connectivity |
+| 🔴 Service not appearing | Check announcement frequency (e.g., every 20s) and network connectivity. |
+| 🟡 Schema not updating | Validate schema format and check gateway logs for parsing or merging errors. |
+| 🟠 Pre-pipeline not running | Ensure the service is announcing its `middlewareMap` correctly. Verify the target service (e.g., `auth-service`) is healthy and registered. |
+| 🔵 Dashboard not loading | Confirm admin token and WebSocket connectivity to the gateway. |
 
 ### Debug Commands
 
@@ -439,15 +442,11 @@ Grapthway is available in two editions, distributed as Docker images on Docker H
 * **Community Edition:** A free-to-use version with a core set of features, ideal for individuals, startups, and small projects.
 * **Enterprise Edition:** Our commercial version with advanced features, unlimited scaling, and professional support, designed for mission-critical applications.
 
----
-
 ### License and Terms of Use
 
 Your use of any Grapthway Docker image is subject to the terms and conditions outlined in our Software License Agreement.
 
 **Please read the full agreement here: [LICENSE.md](LICENSE.md)**
-
----
 
 ---
 
