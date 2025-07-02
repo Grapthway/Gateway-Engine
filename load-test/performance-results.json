@@ -1,0 +1,35 @@
+{
+  "virtual_users": 50,
+  "requests_per_second": 787.1838127139048,
+  "total_requests": 110249,
+  "http_error_rate": 0,
+  "application_error_rate": 0.00090703770555742,
+  "p95_latency": 21.2463,
+  "p99_latency": 54.63056,
+  "min_latency": 0.5163,
+  "max_latency": 68.9381,
+  "median_latency": 6.4283,
+  "test_duration": "N/A",
+  "competitive_benchmarks": {
+    "apollo": {
+      "p95": 50,
+      "p99": 100,
+      "rps": 25000
+    },
+    "cosmo": {
+      "p95": 20,
+      "p99": 40,
+      "rps": 35000
+    }
+  },
+  "performance_advantages": {
+    "vs_apollo": {
+      "p95": "58%",
+      "p99": "45%"
+    },
+    "vs_cosmo": {
+      "p95": "-6%",
+      "p99": "-37%"
+    }
+  }
+}
