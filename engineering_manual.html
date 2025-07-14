@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grapthway :: Engineering Manual</title>
+    <title>Grapthway v2.0 :: Engineering Manual</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -72,6 +72,7 @@
             padding: 20px;
             border-radius: 10px;
             margin: 20px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         .step-card {
             transition: all 0.3s ease;
@@ -84,6 +85,12 @@
         .tip-box {
             background-color: #dbeafe;
             border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning-box {
+            background-color: #fef3c7;
+            border-left: 4px solid var(--warning);
             padding: 1.5rem;
             border-radius: 0 8px 8px 0;
         }
@@ -115,6 +122,8 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         .edition-card:hover {
             transform: translateY(-5px);
@@ -127,18 +136,23 @@
         .edition-card.featured:hover {
             transform: scale(1.07);
         }
+        .feature-list {
+            flex-grow: 1;
+        }
         .feature-list li {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             display: flex;
             align-items: flex-start;
         }
         .feature-list li i {
             color: var(--primary);
-            margin-right: 0.5rem;
+            margin-right: 0.75rem;
             margin-top: 0.2rem;
+            flex-shrink: 0;
         }
         .example-tabs {
             display: flex;
+            flex-wrap: wrap;
             border-bottom: 2px solid #e5e7eb;
             margin-bottom: 1rem;
         }
@@ -166,6 +180,30 @@
             gap: 2rem;
             margin-bottom: 2rem;
         }
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+        .api-table th, .api-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+        .api-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        .api-table .method {
+            font-weight: 700;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            color: white;
+            white-space: nowrap;
+        }
+        .method-get { background-color: #2563eb; }
+        .method-post { background-color: #16a34a; }
         @media (min-width: 1024px) {
             .architecture-diagrams {
                 grid-template-columns: 1fr 1fr;
@@ -175,37 +213,36 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="w-72 bg-white shadow-lg p-6 hidden md:block sticky top-0 h-screen">
+        <aside class="w-72 bg-white shadow-lg p-6 hidden md:block sticky top-0 h-screen overflow-y-auto">
             <div class="text-center mb-12">
                 <h1 class="text-3xl font-bold text-gray-800">
                     <i class="fas fa-project-diagram text-blue-500 mr-2"></i>Grapthway
                 </h1>
-                <p class="text-sm text-gray-500 mt-1">Engineering Manual</p>
+                <p class="text-sm text-gray-500 mt-1">Engineering Manual v2.0</p>
             </div>
             <nav>
                 <ul class="space-y-2">
                     <li><a href="#overview" class="block py-2.5 px-4 rounded nav-link active">Overview</a></li>
                     <li><a href="#architecture" class="block py-2.5 px-4 rounded nav-link">Architecture</a></li>
                     <li><a href="#installation" class="block py-2.5 px-4 rounded nav-link">Installation</a></li>
-                    <li><a href="#pipelines" class="block py-2.5 px-4 rounded nav-link">Middleware Pipelines</a></li>
+                    <li><a href="#service-registration" class="block py-2.5 px-4 rounded nav-link">Service Registration</a></li>
+                    <li><a href="#pipelines" class="block py-2.5 px-4 rounded nav-link">Orchestration Pipelines</a></li>
                     <li><a href="#stitching" class="block py-2.5 px-4 rounded nav-link">Schema Stitching</a></li>
                     <li><a href="#observability" class="block py-2.5 px-4 rounded nav-link">Observability</a></li>
-                    <li><a href="#diagnostics" class="block py-2.5 px-4 rounded nav-link">Diagnostics & Troubleshooting</a></li>
-                    <li><a href="#enterprise" class="block py-2.5 px-4 rounded nav-link">Enterprise Edition</a></li>
+                    <li><a href="#api-reference" class="block py-2.5 px-4 rounded nav-link">API Reference</a></li>
+                    <li><a href="#editions" class="block py-2.5 px-4 rounded nav-link">Editions & Limits</a></li>
+                    <li><a href="#diagnostics" class="block py-2.5 px-4 rounded nav-link">Diagnostics</a></li>
                 </ul>
             </nav>
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-6 md:p-12">
-            <!-- Header -->
+        <main class="flex-1 p-6 md:p-12 overflow-y-auto">
             <header class="mb-16 text-center">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-dark mb-4 tracking-tight">
-                    Grapthway Engineering Manual
+                    Grapthway v2.0 Engineering Manual
                 </h1>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    The complete guide to orchestrating your microservices with the Grapthway declarative GraphQL gateway.
+                    The complete guide to orchestrating your GraphQL and REST microservices with the Grapthway declarative gateway.
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-4">
                     <a href="#installation" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 shadow-lg">
@@ -217,53 +254,25 @@
                 </div>
             </header>
 
-            <!-- Overview -->
             <section id="overview" class="mb-24">
                 <h2 class="text-3xl font-bold text-dark mb-8 section-title">Overview</h2>
                 <p class="mb-6 text-gray-600 mx-auto">
-                    Grapthway is an advanced GraphQL API gateway designed for microservices orchestration. It provides dynamic schema composition, middleware pipelines for cross-cutting concerns, and comprehensive observability tools to manage complex distributed systems.
-                </p>
-                <p class="mb-10 text-gray-600 mx-auto">
-                    Grapthway solves the complexity of managing GraphQL APIs in microservices environments by providing:
+                    Grapthway is an advanced API gateway designed for declarative microservices orchestration. It unifies both GraphQL and REST services under a single, coherent entrypoint, providing dynamic schema composition, protocol-agnostic middleware pipelines, and comprehensive observability tools to manage complex distributed systems.
                 </p>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                    <div class="bg-white p-6 rounded-xl border">
-                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
-                            <i class="fas fa-network-wired text-blue-500 mr-3"></i>
-                            Unified GraphQL API
-                        </h3>
-                        <p class="text-gray-600">
-                            Seamlessly expose a single GraphQL endpoint across all your microservices, simplifying client interactions.
-                        </p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
-                            <i class="fas fa-sitemap text-green-500 mr-3"></i>
-                            Cross-Service Data Composition
-                        </h3>
-                        <p class="text-gray-600">
-                            Combine data from multiple services without creating tight coupling between them.
-                        </p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
-                            <i class="fas fa-exchange-alt text-purple-500 mr-3"></i>
-                            Transactional Workflows
-                        </h3>
-                        <p class="text-gray-600">
-                            Implement complex, multi-step transactions that span across different services.
-                        </p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center">
-                            <i class="fas fa-chart-line text-yellow-500 mr-3"></i>
-                            Centralized Observability
-                        </h3>
-                        <p class="text-gray-600">
-                            Monitor and debug your entire distributed system from a single dashboard.
-                        </p>
-                    </div>
+                <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-12">
+                    <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center">
+                        <i class="fas fa-star mr-2"></i>What's New in v2.0?
+                    </h3>
+                    <ul class="list-disc pl-5 mt-2 text-gray-700 space-y-2">
+                        <li><b>Unified Pipeline Engine:</b> A refactored core engine handles orchestration for both GraphQL and REST, ensuring consistent behavior and reducing code duplication.</li>
+                        <li><b>REST Pipeline Orchestration:</b> Apply the same powerful pre- and post-processing pipelines to your REST endpoints, enabling unified auth, enrichment, and transactional logic.</li>
+                        <li><b>Declarative Request Body Mapping:</b> A `bodyMapping` option in pipeline steps allows you to construct JSON request bodies for downstream REST calls, mapping data from the pipeline context or using static values.</li>
+                         <li><b>Comprehensive Observability Engine:</b> A new high-performance, asynchronous logging system captures the full request/response lifecycle for every transaction, including all pipeline steps, rollbacks, and concurrent executions.</li>
+                        <li><b>Hardware Monitoring:</b> A new monitoring subsystem and dashboard tab provide real-time visibility into the container's CPU, memory, network, and disk I/O usage and limits.</li>
+                        <li><b>Revamped Admin Dashboard:</b> A completely redesigned UI with live log streaming, advanced historical log search, persistent filters, and a polished user experience.</li>
+                        <li><b>Enterprise Redis Resume:</b> Enterprise gateways using Redis can now restart and resume their previous state (including tokens) without needing to re-run the `/start` command, enabling better high-availability patterns.</li>
+                    </ul>
                 </div>
                 
                 <h3 class="text-2xl font-semibold text-dark mb-6">Core Features</h3>
@@ -274,7 +283,7 @@
                         </div>
                         <h3 class="text-xl font-bold text-dark mb-3">Declarative Pipelines</h3>
                         <p class="text-gray-600">
-                            Define complex, multi-step workflows for authentication, data enrichment, and transactional logic in simple JSON—no custom gateway code required.
+                            Define complex, multi-step workflows for both GraphQL and REST endpoints in simple JSON—no custom gateway code required.
                         </p>
                     </div>
                     <div class="bg-white p-8 rounded-xl feature-card">
@@ -292,202 +301,95 @@
                         </div>
                         <h3 class="text-xl font-bold text-dark mb-3">Deep Observability</h3>
                         <p class="text-gray-600">
-                            Gain critical insights with a real-time admin dashboard, live log streaming via WebSockets, and categorized logs for gateway, admin, and schema activities.
+                            Gain critical insights with a real-time admin dashboard, live log streaming, hardware monitoring, and a powerful historical log search engine.
                         </p>
                     </div>
                     <div class="bg-white p-8 rounded-xl feature-card">
                          <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6 ring-8 ring-yellow-50">
                             <i class="fas fa-bolt text-yellow-600 text-3xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-dark mb-3">Scalable Architecture</h3>
+                        <h3 class="text-xl font-bold text-dark mb-3">Protocol Agnostic & Scalable</h3>
                         <p class="text-gray-600">
-                            Choose between in-memory storage for development or Redis for production-grade persistence and scalability. Native support for GraphQL subscriptions over WebSockets.
+                            Manage both GraphQL and REST services. Choose between in-memory storage for development or Redis for production-grade persistence and scalability.
                         </p>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-sync-alt text-blue-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Context Propagation</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Automatic context passing via X-Ctx-* headers across services</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-undo text-green-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Error Handling & Rollback</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Transactional rollback capabilities for distributed operations</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-heartbeat text-purple-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Service Health Monitoring</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Automatic health checks via periodic service announcements</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-balance-scale text-yellow-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Load Balancing</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Round-robin distribution across service instances</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-trash-alt text-red-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Automatic Cleanup</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Services not seen for 30 seconds are automatically removed</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl border">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-boxes text-indigo-500 text-xl mr-2"></i>
-                            <h4 class="font-bold text-lg">Multi-Edition Support</h4>
-                        </div>
-                        <p class="text-gray-600 text-sm">Community (free) and Enterprise editions available</p>
                     </div>
                 </div>
             </section>
 
-            <!-- Architecture -->
             <section id="architecture" class="mb-24">
-                <h2 class="text-3xl font-bold text-dark mb-8 section-title">System Architecture</h2>
-                
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">System Architecture (v2.0)</h2>
+                <p class="mb-6 text-gray-600">The v2.0 architecture introduces a unified Pipeline Executor at its core. This central component is responsible for orchestrating workflows for both GraphQL and REST requests, ensuring consistent logic for tasks like authentication, data enrichment, and logging. For REST routes without a defined pipeline, the gateway bypasses the executor and uses a high-performance reverse proxy to minimize latency.</p>
+
                 <div class="architecture-diagrams">
                     <div class="bg-white p-8 rounded-xl shadow-lg border">
-                        <h3 class="text-xl font-semibold mb-4">Component Architecture</h3>
+                        <h3 class="text-xl font-semibold mb-4">Unified Request Flow</h3>
                         <div class="mermaid text-center">
-                            graph LR
-                                A[Client] -- GraphQL Request --> B(Grapthway Gateway)
+                            graph TD
+                                A[Client Request] --> B{Protocol Detection};
+                                B -- GraphQL --> C[GraphQL Handler];
+                                B -- REST --> D[REST Proxy Handler];
 
-                                subgraph B[Grapthway Gateway]
-                                    C(Pre-Processing Pipeline)
-                                    D{Service & Schema Router}
-                                    E(Post-Processing Pipeline)
-                                end
-
-                                C -- "2. Route Request" --> D
-                                D -- "3. Forward to" --> F[Service A]
-                                D -- "3. Forward to" --> G[Service B]
-                                F -- "4. Response" --> E
-                                G -- "4. Response" --> E
-                                E -- "5. Final Response" --> H[Client Response]
+                                C --> E{Pipeline Configured?};
+                                D --> E;
                                 
-                                B -. "6. Log Data" .-> I[Logging System]
-                                I --> J[Admin Dashboard]
+                                E -- Yes --> F[Unified Pipeline Executor];
+                                F -- Pre-Pipeline --> G[Proxy to Downstream Service];
+                                G -- Response --> F;
+                                F -- Post-Pipeline --> H[Compose Final Response];
+                                
+                                E -- No (REST Only) --> I[High-Speed Reverse Proxy];
+                                I --> G;
+                                H --> Z[Client Response];
                         </div>
                     </div>
                     
                     <div class="bg-white p-8 rounded-xl shadow-lg border">
-                        <h3 class="text-xl font-semibold mb-4">Request Flow</h3>
+                        <h3 class="text-xl font-semibold mb-4">Pipeline Executor Logic</h3>
                         <div class="mermaid text-center">
                             sequenceDiagram
-                                Client->>Gateway: GraphQL Request
-                                Gateway->>Middleware: Execute Pre-Pipeline
-                                Gateway->>Service Router: Route to Service
-                                Service Router->>Service Instance: Request (Round Robin)
-                                Service Instance-->>Gateway: Response
-                                Gateway->>Middleware: Execute Post-Pipeline
-                                Gateway-->>Client: Final Response
+                                participant Handler as Request Handler
+                                participant Executor as Pipeline Executor
+                                participant Service as Downstream Service
+                                
+                                Handler->>Executor: ExecutePrePipeline(config, context)
+                                Executor->>Service: Execute Step 1 (e.g., Auth)
+                                Service-->>Executor: Step 1 Response
+                                Executor->>Executor: Update Context
+                                Executor->>Service: Execute Step 2 (e.g., Get Data)
+                                Service-->>Executor: Step 2 Response
+                                Executor-->>Handler: Return Pipeline Context
+                                
+                                Handler->>Service: Main Request
+                                Service-->>Handler: Main Response
+
+                                Handler->>Executor: ExecutePostPipeline(config, mainResponse)
+                                Executor->>Service: Enrichment Call
+                                Service-->>Executor: Enrichment Data
+                                Executor-->>Handler: Merged Final Data
                         </div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-blue-600">1. Client Request</h3>
-                        <p>GraphQL request hits the gateway endpoint</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-green-600">2. Pre-Processing</h3>
-                        <p>Middleware pipeline executes pre-flight operations</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-purple-600">3. Routing</h3>
-                        <p>Request routed to appropriate service(s)</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-yellow-600">4. Service Execution</h3>
-                        <p>Services process request components</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-pink-600">5. Post-Processing</h3>
-                        <p>Middleware pipeline enriches response</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg step-card">
-                        <h3 class="font-bold text-lg mb-3 text-indigo-600">6. Response</h3>
-                        <p>Final response returned to client</p>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h3 class="font-bold text-lg mb-3 text-blue-600 flex items-center">
-                            <i class="fas fa-balance-scale mr-2"></i>
-                            Load Balancing
-                        </h3>
-                        <p class="text-gray-600">
-                            Grapthway automatically distributes requests across multiple instances of the same service using a round-robin algorithm. This ensures optimal resource utilization and high availability.
-                        </p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h3 class="font-bold text-lg mb-3 text-green-600 flex items-center">
-                            <i class="fas fa-broom mr-2"></i>
-                            Automatic Cleanup
-                        </h3>
-                        <p class="text-gray-600">
-                            Services that haven't announced themselves for 30 seconds are automatically removed from the gateway. This prevents stale services from cluttering the system and ensures only healthy services receive traffic.
-                        </p>
                     </div>
                 </div>
             </section>
 
-            <!-- Installation -->
             <section id="installation" class="mb-24">
                 <h2 class="text-3xl font-bold text-dark mb-8 section-title">Installation & Setup</h2>
                 
                 <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">1. Run with Docker</h3>
                 <p class="mb-6 text-gray-600">Choose the edition that fits your needs. The Community Edition is perfect for getting started, while the Enterprise Edition is built for production scale.</p>
-                <div class="code-block mb-8">
+                <div class="code-block mb-4">
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                     <pre><code class="language-bash"># Community Edition (In-memory storage)
-docker run -d -p 5000:5000 --name my-community-gateway farisbahdlor/grapthway:community-v1.4
-
+docker run -d -p 5000:5000 --name grapthway-ce farisbahdlor/grapthway:community-v2.0
 </code></pre>
                 </div>
-                
-                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Storage Options</h3>
-                <div class="diagram-container mb-8">
-                    <div class="mermaid">
-                        graph LR
-                            A[Gateway] -->|Runtime Data| B[In-Memory]
-                            A -->|Persistent Data| C[Redis]
-                            B --> D[Fast Development]
-                            C --> E[Production Ready]
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h4 class="font-bold text-lg mb-3 text-blue-600">In-Memory Storage</h4>
-                        <ul class="list-disc pl-5 text-gray-600">
-                            <li>Default for Community Edition</li>
-                            <li>Ideal for development and testing</li>
-                            <li>No external dependencies</li>
-                            <li>Data is lost when gateway restarts</li>
-                        </ul>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h4 class="font-bold text-lg mb-3 text-green-600">Redis Storage</h4>
-                        <ul class="list-disc pl-5 text-gray-600">
-                            <li>Required for Enterprise Edition</li>
-                            <li>Persistent storage for schemas and configs</li>
-                            <li>Supports high availability deployments</li>
-                            <li>Production-ready solution</li>
-                        </ul>
-                    </div>
+                <div class="code-block mb-8">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-bash"># Enterprise Edition (Requires Redis)
+docker run -d -p 5000:5000 \
+  -e STORAGE_TYPE=redis \
+  -e REDIS_ADDR=your-redis-host:6379 \
+  --name grapthway-ee farisbahdlor/grapthway:enterprise-v2.0
+</code></pre>
                 </div>
 
                 <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">2. Obtain Access Tokens</h3>
@@ -500,293 +402,289 @@ docker run -d -p 5000:5000 --name my-community-gateway farisbahdlor/grapthway:co
                 <div class="tip-box mb-8">
                     <p class="text-blue-800">
                         <i class="fas fa-lightbulb mr-2"></i>
-                        After starting the gateway, visit the <code>/start</code> endpoint to get your access tokens
+                        <strong>Enterprise Tip:</strong> If using Redis, the gateway will persist its "started" state and tokens. On a container restart, it will automatically resume its session without needing to hit <code>/start</code> again.
                     </p>
                 </div>
 
-                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">3. Register Your Microservice</h3>
-                <p class="mb-6 text-gray-600">From your microservice, periodically send a `POST` request to the gateway's `/health` endpoint. This allows Grapthway to discover your service, retrieve its schema, and keep its status updated.</p>
-                <div class="code-block mb-8">
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                    <pre><code class="language-javascript">// In your service's startup logic
-async function registerWithGateway() {
-  const adminToken = 'PASTE_YOUR_ADMIN_TOKEN_HERE';
-  const response = await fetch(`http://gateway-host:5000/health?token=${adminToken}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      service: 'payment-service',
-      url: 'http://payment-service-internal:4000/graphql',
-      subgraph: 'billing', // Optional: group services into subgraphs
-      schema: `type Query { ... }`, // Push schema directly for performance
-      middlewareMap: { /* ... pipeline definitions ... */ },
-      stitchingConfig: { /* ... stitching definitions ... */ }
-    })
-  });
-  
-  if (response.ok) {
-    console.log('Service registered with Grapthway successfully');
-  } else {
-    console.error('Failed to register with Grapthway:', await response.text());
-  }
-}
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">3. Register Your Microservices</h3>
+                <p class="mb-6 text-gray-600">From your microservice, periodically send a `POST` request to the gateway's `/admin/health` endpoint. This allows Grapthway to discover your service, retrieve its schema (if applicable), and keep its status updated. This process is the same for both GraphQL and REST services.</p>
+            </section>
+            
+            <section id="service-registration" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Service Registration</h2>
+                <p class="mb-6 text-gray-600">Service registration is the mechanism by which the gateway becomes aware of your downstream services. You must send a `POST` request to `/admin/health` every 30 seconds to keep the service alive in the gateway's registry. The payload contains all the configuration for the service.</p>
 
-// Announce every 30 seconds to stay "alive"
-setInterval(registerWithGateway, 30000);</code></pre>
+                <div class="example-tabs mb-6">
+                    <div class="example-tab active" data-target="reg-gql">GraphQL-Only Service</div>
+                    <div class="example-tab" data-target="reg-rest">REST-Only Service</div>
+                    <div class="example-tab" data-target="reg-hybrid">Hybrid Service</div>
+                </div>
+
+                <div class="example-content active" id="reg-gql">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">GraphQL-Only Service</h4>
+                    <p class="mb-4 text-gray-600">An example registration for a service that only exposes a GraphQL API.</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// POST /admin/health?token=<your_token>
+{
+  "service": "auth-service", // The unique name of your service.
+  "url": "http://auth-internal:4001/graphql", // The internal address of your service.
+  "type": "graphql", // The primary type of this service.
+  "subgraph": "auth", // The logical group this service's schema belongs to.
+  "schema": "type User { ... } type Mutation { login(user: String!): String }", // The GraphQL schema definition.
+  
+  // Defines pipelines for specific GraphQL fields.
+  "middlewareMap": {
+    "login": { // This pipeline attaches to the 'login' mutation.
+      "pre": [
+        {
+          "service": "rate-limiter-rest", // Call a REST service before the main mutation.
+          "method": "POST",
+          "path": "/check",
+          "onError": { "stop": true } // If the rate-limiter fails, stop the entire request.
+        }
+      ]
+    }
+  },
+
+  // Defines how to "stitch" fields from this service onto types from other services.
+  "stitchingConfig": {
+    "User": { // Extend the 'User' type.
+      "authInfo": { // With a new field called 'authInfo'.
+        "service": "auth-service", // This service will provide the data.
+        "resolverField": "getUserById", // By calling its 'getUserById' query.
+        "argsMapping": { "id": "id" } // Map the parent User's 'id' to the resolver's 'id' argument.
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="example-content" id="reg-rest">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">REST-Only Service</h4>
+                    <p class="mb-4 text-gray-600">An example for a legacy service that only exposes REST endpoints.</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// POST /admin/health?token=<your_token>
+{
+  "service": "inventory-api", // The unique name for the REST service.
+  "url": "http://inventory-legacy:3000", // The base URL for the service.
+  "type": "rest", // The service type is REST.
+  "path": "/v1/inventory", // The base path prefix for all routes from this service.
+  
+  // Defines pipelines for specific REST routes.
+  "restPipelines": {
+    "POST /v1/inventory/update": { // Attaches to the 'POST' method on this specific route.
+      "pre": [
+        {
+          "service": "auth-service", // A GraphQL service used for auth.
+          "field": "verifyAdmin", // Call this GraphQL field.
+          "passHeaders": ["Authorization"], // Pass the auth header from the original request.
+          "onError": { "stop": true } // If auth fails, stop the request.
+        }
+      ]
+    }
+  }
+}</code></pre>
+                    </div>
                 </div>
                 
-                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                    <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Service Announcement
-                    </h3>
-                    <p class="text-gray-700">
-                        Services must announce themselves to the gateway every 30 seconds to maintain their registration. If a service fails to announce for more than 30 seconds, it will be automatically removed from the gateway along with its associated schemas and pipelines.
-                    </p>
+                <div class="example-content" id="reg-hybrid">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Hybrid Service</h4>
+                    <p class="mb-4 text-gray-600">A single service can register both GraphQL and REST capabilities in one payload.</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// POST /admin/health?token=<your_token>
+{
+  "service": "products-service",
+  "url": "http://products-service-internal:8000",
+  "type": "graphql", // The primary type. REST routes are an addition.
+  "subgraph": "products",
+  "schema": "type Query { getProduct(id: ID!): Product } type Product { id: ID name: String }",
+  
+  // Pipelines for GraphQL fields.
+  "middlewareMap": {
+    "getProduct": {
+      "pre": [{
+        "service": "auth-service",
+        "field": "validateSession",
+        "onError": { "stop": true }
+      }]
+    }
+  },
+
+  // Pipelines for REST endpoints also served by this service.
+  "restPipelines": {
+    "POST /products/{id}/inventory": {
+       "pre": [{
+        "service": "auth-service",
+        "field": "verifyAdmin",
+        "onError": { "stop": true }
+      }]
+    }
+  },
+
+  // Schema stitching configuration.
+  "stitchingConfig": {
+    "Order": { // Extends the 'Order' type (defined in another service).
+      "productDetails": { // Adds a 'productDetails' field.
+        "service": "products-service", // This service resolves the field.
+        "resolverField": "getProduct", // Using its 'getProduct' query.
+        "argsMapping": { "id": "productId" } // Maps the parent Order's 'productId' to the 'id' argument.
+      }
+    }
+  }
+}</code></pre>
+                    </div>
                 </div>
             </section>
 
-            <!-- Middleware Pipeline -->
             <section id="pipelines" class="mb-24">
-                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Middleware Pipelines</h2>
-                <p class="mb-10 text-gray-600">Pipelines are the core of Grapthway's orchestration engine. They allow you to define declarative, multi-step workflows that execute before (`pre`) and after (`post`) your main GraphQL operation.</p>
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Orchestration Pipelines</h2>
+                <p class="mb-10 text-gray-600">Pipelines are the core of Grapthway's orchestration engine. They allow you to define declarative, multi-step workflows that execute before (`pre`) and after (`post`) your main service call. As of v2.0, pipelines work for both GraphQL fields and specific REST endpoints, and can even mix calls to GraphQL and REST services within a single workflow.</p>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                    <div class="bg-white p-8 rounded-xl border">
-                        <h3 class="text-2xl font-semibold text-dark mb-4">Pre-Flight Pipeline</h3>
-                        <p class="text-gray-600 mb-4">Executes before the request is routed to the downstream service. Ideal for:</p>
-                        <ul class="list-disc pl-5 space-y-3 text-gray-600">
-                            <li><b class="text-gray-700">Authentication & Authorization:</b> Verify tokens and permissions.</li>
-                            <li><b class="text-gray-700">Context Injection:</b> Fetch user data and add it to the request context for later use.</li>
-                            <li><b class="text-gray-700">Transactional Logic:</b> Reserve inventory or create transaction logs before proceeding.</li>
-                            <li><b class="text-gray-700">Input Validation:</b> Perform complex validation across multiple services.</li>
-                            <li>Supports synchronous and concurrent execution</li>
-                            <li>Error handling with rollback capabilities</li>
-                        </ul>
-                    </div>
-                    <div class="bg-white p-8 rounded-xl border">
-                        <h3 class="text-2xl font-semibold text-dark mb-4">Post-Flight Pipeline</h3>
-                        <p class="text-gray-600 mb-4">Executes after the downstream service returns a response. Ideal for:</p>
-                        <ul class="list-disc pl-5 space-y-3 text-gray-600">
-                            <li><b class="text-gray-700">Data Enrichment:</b> Augment the response by fetching related data from other services.</li>
-                            <li><b class="text-gray-700">Response Transformation:</b> Format, filter, or restructure the final output.</li>
-                            <li><b class="text-gray-700">Side Effects:</b> Trigger notifications, analytics events, or cleanup tasks.</li>
-                            <li><b class="text-gray-700">Concurrent Operations:</b> Fire-and-forget tasks that don't need to block the response.</li>
-                            <li>Access to main service response data</li>
-                            <li>Results merged into final response</li>
-                        </ul>
-                    </div>
+                <div class="tip-box mb-8">
+                    <p class="text-blue-800"><i class="fas fa-info-circle mr-2"></i><strong>Note on Backward Compatibility:</strong> Your existing v1.5 `middlewareMap` configurations for GraphQL pipelines are fully compatible with v2.0 and will continue to work without any changes.</p>
                 </div>
 
-                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Example: Checkout Pipeline</h3>
-                <div class="code-block mb-8">
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                    <pre><code class="language-javascript">// This configuration is sent in the `middlewareMap` during service registration.
-const MIDDLEWARE_MAP = {
-  // This entire block defines a middleware pipeline for the 'payCart' GraphQL field.
-  "payCart": {
-    // 'pre' steps run in sequence *before* the main 'payCart' resolver is called.
-    "pre": [
-      {
-        "service": "auth-service", // The downstream microservice to call for this step.
-        "field": "getUserData", // The specific GraphQL field (query or mutation) to execute on that service.
-        "passHeaders": ["Authorization"], // Pass the original request's auth header.
-        "selection": ["user { id }"], // The data fields to select from the 'getUserData' response.
-        // The result of the 'user' field will be put into the context with the key 'user'.
-        "assign": { "user": "user" }, // Saves data from the step's response into the pipeline's context for later steps.
-        "concurrent": false // This is a blocking step; the gateway will wait for it to complete before proceeding.
-      },
-      {
-        "service": "cart-service",
-        "field": "getCartItems",
-        "passHeaders": ["Authorization"], // Gateway automatically adds 'X-Ctx-User' header from the context.
-        "selection": ["id", "storeId", "productId"],
-        // The entire result of 'getCartItems' is put into the context with the key 'cartItems'.
-        // An empty string for the value means "assign the entire result of the field".
-        "assign": { "cartItems": "" },
-        "concurrent": false, // This is a blocking step.
-        // Defines what happens if this specific step fails.
-        "onError": {
-          // If this step fails, the following rollback steps are executed.
-          // A list of compensating actions to run. The gateway will also rollback any previous pre-pipeline steps.
-          "rollback": [
-            {
-              "service": "inventory-service",
-              "field": "releaseItems",
-              // NOTE: 'releaseItems' service MUST read 'X-Ctx-CartItems' header for data.
-              // 'argsMapping' is NOT supported here.
-              "concurrent": true // The rollback step is "fire-and-forget"; the gateway doesn't wait for its response.
-            },
-            {
-              "service": "log-service",
-              "field": "refundItemsLog",
-              // NOTE: 'refundItemsLog' service MUST read 'X-Ctx-CartItems' header for data.
-              "concurrent": true
-            }
-          ]
-        }
-      }
-    ],
-    // 'post' steps run *after* the main 'payCart' resolver successfully returns data. They are used for data enrichment.
-    "post": [
-      {
-        "service": "balance-service", // The service to call for additional data.
-        "field": "getUserBalance", // The field that provides the enrichment data.
-        "concurrent": false, // A blocking enrichment; the gateway waits for this data before returning the final response.
-        // The 'userId' value is taken from the main 'payCart' resolver's response.
-        // Maps a value from the main resolver's result ('userId') to an argument for the enrichment query.
-        "argsMapping": { "userId": "userId" },
-        "selection": ["id", "amount", "userId", "updatedAt"], // The fields to request from the enrichment service.
-        // The result of 'getUserBalance' is assigned to the 'finalBalance' field in the final response.
-        // Merges the data from this step into the final GraphQL response sent to the client.
-        "assign": { "finalBalance": "" }
-      }
-    ]
-  }
-}</code></pre>
+                <h3 class="text-2xl font-semibold text-dark mb-4">Pipeline Step Configuration</h3>
+                <p class="mb-6 text-gray-600">Each step in a pipeline is a JSON object with the following properties:</p>
+                <div class="bg-white rounded-lg border p-6 mb-10">
+                    <ul class="list-none space-y-4">
+                        <li><code><strong>service</strong>: string</code> <span class="text-gray-500">- The name of the registered service to call.</span></li>
+                        <li><code><strong>field</strong>: string</code> <span class="text-gray-500">- (GraphQL only) The query or mutation to execute.</span></li>
+                        <li><code><strong>selection</strong>: string[]</code> <span class="text-gray-500">- (GraphQL only) Specifies which fields to return, reducing payload size. E.g., <code>["id", "name", "address { city }"]</code>.</span></li>
+                        <li><code><strong>method</strong>: string</code> <span class="text-gray-500">- (REST only) The HTTP method (e.g., "GET", "POST").</span></li>
+                        <li><code><strong>path</strong>: string</code> <span class="text-gray-500">- (REST only) The endpoint path (e.g., "/items/{id}").</span></li>
+                        <li><code><strong>bodyMapping</strong>: object</code> <span class="text-gray-500">- (REST only) Maps context data to a JSON request body.</span></li>
+                        <li><code><strong>passHeaders</strong>: string[]</code> <span class="text-gray-500">- An array of headers to pass from the original request.</span></li>
+                        <li><code><strong>assign</strong>: object</code> <span class="text-gray-500">- Maps response data from this step into the pipeline context. e.g., <code>{"userCtx": "user"}</code>.</span></li>
+                        <li><code><strong>argsMapping</strong>: object</code> <span class="text-gray-500">- (GraphQL only) Maps data from context to arguments for this step's call.</span></li>
+                        <li><code><strong>concurrent</strong>: boolean</code> <span class="text-gray-500">- If true, the gateway executes this step without waiting for a response (fire-and-forget). Defaults to false.</span></li>
+                        <li><code><strong>onError</strong>: object</code> <span class="text-gray-500">- Defines failure behavior for this step, including a <code>"rollback"</code> array of compensating steps.</span></li>
+                    </ul>
                 </div>
                 
-                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Pipeline Examples</h3>
-                
+                <div class="warning-box mb-12">
+                    <h4 class="font-bold text-yellow-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Important: Scope of `onError` and `rollback`</h4>
+                    <p class="text-yellow-800">The <code>onError</code> configuration is scoped to a specific <strong>pipeline step</strong>. It is designed to trigger compensating transactions (rollbacks) for actions taken in *previous, successful `pre` steps* if a *subsequent blocking `pre` step* fails. It does <strong>not</strong> apply to failures in the main service resolver/handler itself. This design separates the orchestration logic from the core business logic of the downstream service.</p>
+                </div>
+
+
+                <h3 class="text-2xl font-semibold text-dark mt-12 mb-4">Advanced Mixed-Protocol Examples</h3>
+                <p class="mb-6 text-gray-600">The true power of v2.0 is the ability to seamlessly orchestrate workflows across different protocols. These examples demonstrate how to combine GraphQL, REST, and various pipeline features to build robust, real-world applications.</p>
+
                 <div class="example-tabs mb-6">
-                    <div class="example-tab active" data-target="easy-example">Basic Auth</div>
-                    <div class="example-tab" data-target="medium-example">Cart Checkout</div>
-                    <div class="example-tab" data-target="complex1-example">Distributed Transaction</div>
-                    <div class="example-tab" data-target="complex2-example">Multi-Service Enrichment</div>
+                    <div class="example-tab active" data-target="ex1">E-commerce Order</div>
+                    <div class="example-tab" data-target="ex2">Social Media Post</div>
+                    <div class="example-tab" data-target="ex3">Financial Transaction w/ Rollback</div>
+                    <div class="example-tab" data-target="ex4">IoT Data Ingestion</div>
+                    <div class="example-tab" data-target="ex5">Profile Update w/ Avatar</div>
                 </div>
-                
-                <div class="example-content active" id="easy-example">
-                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Easy: Basic Auth Pre-Processor</h4>
+
+                <div class="example-content active" id="ex1">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">1. E-commerce Order Placement</h4>
+                    <p class="mb-4 text-gray-600">A user places an order via a GraphQL mutation. The pipeline first validates the user's session (GraphQL), then checks stock at a legacy inventory API (REST). After the main `placeOrder` mutation succeeds, it makes two concurrent calls: one to a REST service to send a confirmation email, and another to a GraphQL service to update user analytics.</p>
                     <div class="code-block mb-8">
                         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        <pre><code class="language-javascript">{
-  "secureData": {
-    "pre": [{
-      "service": "auth-service",
-      "field": "validateToken",
-      "operation": "query",
-      "concurrent": false,
-      "passHeaders": ["Authorization"],
-      "onError": {
-        "stop": true
-      }
-    }]
-  }
-}</code></pre>
-                    </div>
-                </div>
-                
-                <div class="example-content" id="medium-example">
-                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Medium: Cart Checkout Flow</h4>
-                    <div class="code-block mb-8">
-                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        <pre><code class="language-javascript">{
-  "payCart": {
-    "pre": [
-      {
-        "service": "auth",
-        "field": "getUser",
-        "passHeaders": ["Authorization"],
-        "assign": { "user": "" }
-      },
-      {
-        "service": "cart",
-        "field": "getCartItems",
-        // The 'cart' service must use the 'X-Ctx-User' header.
-        "assign": { "cart": "" }
-      }
-    ],
-    "post": [
-      {
-        "service": "payment",
-        "field": "processPayment",
-        "argsMapping": {
-          // These fields must be present in the response from the main 'payCart' resolver.
-          // The 'payCart' resolver logic should access the pre-pipeline context
-          // and return an object like: { "userId": "some-id", "cartTotal": 123.45, ... }
-          "userId": "userId",
-          "amount": "cartTotal"
-        }
-      }
-    ]
-  }
-}</code></pre>
-                    </div>
-                </div>
-                
-                <div class="example-content" id="complex1-example">
-                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Complex: Distributed Transaction</h4>
-                    <div class="code-block mb-8">
-                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        <pre><code class="language-javascript">{
+                        <pre><code class="language-javascript">// Attached to GraphQL mutation: placeOrder(items: [ItemInput!]): Order
+// The main `placeOrder` resolver is assumed to return an object like: { "id": "ord_123", "buyerId": "usr_456", "total": 99.99 }
+{
   "placeOrder": {
     "pre": [
       {
-        "service": "auth",
-        "field": "verifyUser",
-        "concurrent": false
+        "service": "auth-service-gql", // Call a GraphQL service for authentication.
+        "field": "validateSession", // The specific query/mutation to run.
+        "passHeaders": ["Authorization"], // Pass the Authorization header from the client's request.
+        "selection": ["user { id email }"], // Specify which fields to get back from the auth service.
+        "assign": { "userContext": "user" }, // Take the 'user' object from the response and save it as 'userContext' in the pipeline's memory.
+        "onError": { "stop": true } // If auth fails, abort the entire request.
       },
       {
-        "service": "inventory",
-        "field": "reserveItems",
-        "concurrent": false,
-        "assign": { "reservation": "" },
-        "onError": {
-          "rollback": [
-            {
-              "service": "inventory",
-              "field": "releaseItems"
-              // The 'inventory' service must be designed to read the 'X-Ctx-Reservation' header
-              // to get the ID of the reservation to release.
-            }
-          ]
-        }
-      },
-      {
-        "service": "payment",
-        "field": "authorizePayment",
-        "concurrent": false,
-        "assign": { "authorization": "" },
-        "onError": {
-          "stop": true,
-          "rollback": [
-            {
-              "service": "payment",
-              "field": "cancelAuthorization"
-              // The 'payment' service must read the 'X-Ctx-Authorization' header.
-            }
-          ]
-        }
+        "service": "inventory-api-rest", // Call a REST service to check stock.
+        "method": "POST", // Use the POST method.
+        "path": "/v1/stock/check-availability", // At this specific path.
+        "bodyMapping": {
+            "items_to_check": "args.items" // Get the 'items' from the original GraphQL mutation's arguments and use them to build the request body.
+        },
+        "onError": { "stop": true } // If stock check fails, abort.
       }
     ],
     "post": [
-      { "service": "order", "field": "createOrder" },
-      { "service": "notification", "field": "sendConfirmation", "concurrent": true }
+      {
+        "service": "email-api-rest", // After the order is placed, call a REST service to send an email.
+        "method": "POST",
+        "path": "/v2/send/order-confirmation",
+        "bodyMapping": {
+            "recipient_email": "userContext.email", // Get the email from the context we saved in the 'pre' step.
+            "order_id": "id", // Get the 'id' field from the main `placeOrder` mutation's response.
+            "order_total": "total" // Get the 'total' field from the main `placeOrder` mutation's response.
+        },
+        "concurrent": true // Send the email and don't wait for a response (fire-and-forget).
+      },
+      {
+        "service": "analytics-service-gql", // Also, update analytics with another GraphQL call.
+        "operation": "mutation",
+        "field": "incrementOrderCount",
+        "argsMapping": { 
+            "userId": "buyerId" // Get the 'buyerId' from the main `placeOrder` mutation's response and use it as an argument.
+        },
+        "concurrent": true // Also fire-and-forget.
+      }
     ]
   }
 }</code></pre>
                     </div>
                 </div>
                 
-                <div class="example-content" id="complex2-example">
-                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Complex: Multi-Service Enrichment</h4>
+                <div class="example-content" id="ex2">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">2. Social Media Post Creation (REST-first)</h4>
+                    <p class="mb-4 text-gray-600">A user creates a new post via a `POST` request to a REST endpoint. The pipeline validates the session (GraphQL), runs the post content through a legacy REST-based content moderation service, and after the main REST call succeeds, it notifies followers (GraphQL) and triggers a fan-out task (REST).</p>
                     <div class="code-block mb-8">
                         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        <pre><code class="language-javascript">{
-  "getProductDetails": {
-    "post": [
+                        <pre><code class="language-javascript">// Attached to REST endpoint: POST /v3/posts
+// The main REST handler is assumed to return a response like: { "id": "post_789", "authorId": "usr_456" }
+{
+  "POST /v3/posts": {
+    "pre": [
       {
-        "service": "review-service",
-        "field": "getProductReviews",
-        "argsMapping": { "productId": "id" },
-        "assign": { "reviews": "" },
-        "concurrent": false
+        "service": "user-session-gql", // Authenticate the user with a GraphQL service.
+        "field": "getActiveUser",
+        "passHeaders": ["Authorization"],
+        "selection": ["id"], // We only need the user's ID.
+        "assign": { "user": "" }, // Assign the entire response (e.g., { "id": "usr_456" }) to the 'user' key in the context.
+        "onError": { "stop": true }
       },
       {
-        "service": "inventory-service",
-        "field": "getStockInfo",
-        "argsMapping": { "productId": "id" },
-        "assign": { "stock": "" },
+        "service": "moderation-api-rest", // Run content moderation with a REST service.
+        "method": "POST",
+        "path": "/filter/text",
+        "bodyMapping": {
+            "text_content": "request.body.content" // Get the 'content' field from the original POST request's body.
+        },
+        "onError": { "stop": true }
+      }
+    ],
+    "post": [
+      {
+        "service": "notification-gql", // After the post is created, send notifications via a GraphQL mutation.
+        "operation": "mutation",
+        "field": "notifyFollowersOfNewPost",
+        "argsMapping": { 
+            "postId": "id", // Get the 'id' from the main REST response.
+            "authorId": "user.id" // Get the user ID from the context we saved in the 'pre' step.
+        },
+        "concurrent": true // Fire-and-forget.
+      },
+      {
+        "service": "fanout-worker-rest", // Also, trigger a background task via a REST call.
+        "method": "POST",
+        "path": "/enqueue-feed-update",
+        "bodyMapping": {
+            "postId": "id", // Use the post ID from the main REST response.
+            "authorId": "authorId" // Use the author ID from the main REST response.
+        },
         "concurrent": true
       }
     ]
@@ -794,46 +692,170 @@ const MIDDLEWARE_MAP = {
 }</code></pre>
                     </div>
                 </div>
+
+                <div class="example-content" id="ex3">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">3. Financial Transaction with Rollback</h4>
+                    <p class="mb-4 text-gray-600">A complex financial workflow. The `pre` pipeline authorizes a payment with a third-party provider (REST). The main operation, `reserveTickets` (GraphQL), is assumed to fail. This triggers the `onError` block, which executes a compensating `rollback` step. The rollback calls the payment provider's `void` endpoint, using `bodyMapping` to send the necessary transaction ID from the context and a static reason code.</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// Attached to GraphQL mutation: reserveTickets(showId: ID!, quantity: Int!, ticketPrice: Float!, paymentToken: String!)
+{
+  "reserveTickets": {
+    "pre": [
+       {
+        "service": "payment-provider-api", // 1. Authorize a payment hold with a REST API.
+        "method": "POST",
+        "path": "/v1/authorize_payment",
+        "bodyMapping": {
+            "amount": "args.ticketPrice", // Use the price from the mutation's arguments.
+            "currency": "USD", // Use a hardcoded static value.
+            "card_token": "args.paymentToken" // Use the payment token from the arguments.
+        },
+        "assign": { "paymentAuth": "" }, // Store the entire response (e.g., { transactionId: 'txn_abc' }) as 'paymentAuth' in the context.
+        "onError": { "stop": true } // If this fails, no rollback is needed yet, just stop.
+      },
+      {
+         "service": "ticketing-service-gql", // 2. Attempt to create the ticket reservation. We assume this step will fail.
+         "field": "createReservation",
+         "argsMapping": { "showId": "args.showId" },
+         "assign": { "reservation": ""},
+         "onError": {
+            "stop": true, // Stop the execution since this critical step failed.
+            "rollback": [ // Because it failed, execute these compensating actions.
+              {
+                "service": "payment-provider-api", // Call the same payment API to void the transaction.
+                "method": "POST",
+                "path": "/v1/void_authorization",
+                "bodyMapping": {
+                  "authorization_id": "paymentAuth.transactionId", // Get the ID from the context we saved in the first step.
+                  "reason_code": "INVENTORY_UNAVAILABLE" // Send a static reason for the void.
+                }
+              }
+            ]
+         }
+      }
+    ],
+    "post": []
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="example-content" id="ex4">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">4. IoT Data Ingestion & Alerting</h4>
+                    <p class="mb-4 text-gray-600">An IoT device sends telemetry data to a REST endpoint. A `pre` step validates the device token. After the data is ingested by the main service, a `post` pipeline concurrently sends the raw data to a time-series DB (REST) and checks for anomalies (GraphQL). The anomaly check is blocking; if it returns an alert, a final step sends a notification to a Slack webhook (REST).</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// Attached to REST endpoint: POST /ingest/telemetry
+// The main REST handler is assumed to return a response like: { "payload": { ... }, "status": "ok" }
+{
+  "POST /ingest/telemetry": {
+    "pre": [{
+        "service": "device-auth-api", // 1. Validate the device token before anything else.
+        "method": "POST",
+        "path": "/token/introspect",
+        "passHeaders": ["X-Device-Token"],
+        "assign": { "device": "" }, // Store the device info (e.g., { id: 'dev_123' }) in the context.
+        "onError": { "stop": true }
+    }],
+    "post": [
+      {
+        "service": "timeseries-db-api", // 2. Concurrently archive the raw data to a time-series database.
+        "method": "POST",
+        "path": "/metrics/raw",
+        "bodyMapping": { 
+          "payload": "payload", // Get the 'payload' field from the main REST response.
+          "deviceId": "device.id" // Get the device ID from the context.
+        },
+        "concurrent": true // Fire-and-forget.
+      },
+      {
+        "service": "anomaly-detection-gql", // 3. In parallel, run a blocking GraphQL query to check for anomalies.
+        "field": "analyzeTelemetry",
+        "argsMapping": { "payload": "payload" }, // Use the 'payload' from the main REST response as an argument.
+        "selection": ["alert { level message }"], // We only need the alert details back.
+        "assign": { "anomalyResult": "" }, // Store the result as 'anomalyResult' in the context.
+        "concurrent": false // This is a blocking call; the pipeline waits for it to finish.
+      },
+      {
+        "service": "slack-webhook-rest", // 4. This step runs after the anomaly check completes.
+        "method": "POST",
+        "path": "/T012345/B67890/xyz...",
+        "bodyMapping": {
+            // Get the message from the result of the previous step.
+            // Note: If no alert was found, this might be null. The receiving service should handle this gracefully.
+            "text": "anomalyResult.alert.message"
+        },
+        "concurrent": true
+      }
+    ]
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="example-content" id="ex5">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">5. Profile Update with Avatar</h4>
+                    <p class="mb-4 text-gray-600">A user updates their profile and uploads a new avatar via a multipart/form-data request to a REST endpoint. A `pre` step verifies ownership (GraphQL). After the main handler saves the profile text and the file path, a `post` step triggers a REST-based image processing service to create thumbnails (concurrent).</p>
+                    <div class="code-block mb-8">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre><code class="language-javascript">// Attached to REST endpoint: PUT /users/{id}/profile
+// The main REST handler is assumed to return a response like: { "id": "usr_456", "avatarUrl": "https://cdn.com/path/to/image.jpg" }
+{
+  "PUT /users/{id}/profile": {
+    "pre": [
+      {
+        "service": "auth-gql", // 1. Call a GraphQL service to verify the user is allowed to edit this profile.
+        "field": "verifyProfileOwnership",
+        "passHeaders": ["Authorization"],
+        "argsMapping": { 
+          // Get the 'id' from the URL path of the original request and use it as an argument.
+          "profileId": "request.path.id" 
+        },
+        "onError": { "stop": true } // If not the owner, stop the request.
+      }
+    ],
+    "post": [
+      {
+        "service": "image-processor-api", // 2. After the profile is updated, trigger a background job to process the new avatar.
+        "method": "POST",
+        "path": "/process/new-avatar",
+        "bodyMapping": {
+            // Get the public URL of the newly uploaded avatar from the main REST response.
+            "source_url": "avatarUrl",
+            // Get the user's ID from the main REST response.
+            "user_id": "id"
+        },
+        "concurrent": true // Fire-and-forget; let the image processor work in the background.
+      }
+    ]
+  }
+}</code></pre>
+                    </div>
+                </div>
             </section>
 
-            <!-- Schema Stitching -->
             <section id="stitching" class="mb-24">
-                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Schema Stitching</h2>
-                <p class="mb-10 text-gray-600">Schema stitching allows you to extend types defined in one service with fields resolved by another, creating a rich, interconnected data graph.</p>
-                
-                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 mb-8">
-                    <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center">
-                        <i class="fas fa-bolt mr-2"></i>
-                        Hot Reload & Dynamic Composition
-                    </h3>
-                    <p class="text-gray-700">
-                        Grapthway automatically composes schemas with real-time updates when services register or unregister. Features include:
-                    </p>
-                    <ul class="list-disc pl-5 mt-2 text-gray-700">
-                        <li>Automatic schema composition from services</li>
-                        <li>Real-time updates when services register/unregister</li>
-                        <li>Subgraph support for domain isolation</li>
-                        <li>Zero-downtime schema updates</li>
-                    </ul>
-                </div>
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">GraphQL Schema Stitching</h2>
+                <p class="mb-10 text-gray-600">Schema stitching allows you to extend types defined in one service with fields resolved by another, creating a rich, interconnected data graph. This feature is specific to GraphQL services.</p>
                 
                 <div class="diagram-container mb-10">
                     <div class="mermaid">
-                        graph TB
-                            subgraph Gateway
-                                A[Combined Schema]
+                        graph TD
+                            subgraph "Unified Schema (in Gateway)"
+                                C["type User { id: ID, name: String, orderHistory: [Order] }"]
                             end
                             
-                            subgraph Service A
-                                B[Schema A]
+                            subgraph "user-service"
+                                A["type User { id: ID, name: String }"]
                             end
                             
-                            subgraph Service B
-                                C[Schema B]
+                            subgraph "order-service"
+                                B["type Query { getOrdersByUserId(userId: ID!): [Order] }"]
                             end
                             
-                            A --> B
-                            A --> C
+                            C -- Stitched from --> A;
+                            C -- Extended with field resolved by --> B;
                     </div>
                 </div>
 
@@ -843,161 +865,153 @@ const MIDDLEWARE_MAP = {
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                     <pre><code class="language-javascript">// This configuration is sent in the `stitchingConfig` during the order-service's registration.
 const STITCHING_CONFIG = {
-  // We are extending the "User" type
+  // We are extending the "User" type, which is defined in another service.
   "User": {
-    // Add a new field called "orderHistory"
+    // Add a new field called "orderHistory" to the User type in the unified schema.
     "orderHistory": {
-      "service": "order-service", // This service will resolve the field
-      "resolverField": "getOrdersByUserId", // Use this query from the order-service schema
-      // Map the `id` field from the parent `User` object to the `userId` argument of the resolver.
+      "service": "order-service", // This service (the order-service) will be responsible for resolving this new field.
+      "resolverField": "getOrdersByUserId", // To resolve it, the gateway should call the 'getOrdersByUserId' query from this service's schema.
+      // The resolver needs a 'userId' argument. We tell the gateway to get this value from the 'id' field of the parent User object.
       "argsMapping": { "userId": "id" } 
-    }
-  },
-  
-  // You can also add brand new root fields
-  "Query": {
-    "myOrderHistory": {
-      "service": "order-service",
-      "resolverField": "myOrderHistory" // Expose a top-level query from order-service
     }
   }
 };</code></pre>
                 </div>
             </section>
 
-            <!-- Logging & Monitoring -->
             <section id="observability" class="mb-24">
                 <h2 class="text-3xl font-bold text-dark mb-8 section-title">Observability</h2>
-                <p class="mb-10 text-gray-600">Grapthway provides a suite of tools to monitor the health and performance of your gateway and connected services.</p>
+                <p class="mb-10 text-gray-600">Grapthway v2.0 introduces a state-of-the-art, non-blocking logging engine and a completely redesigned admin dashboard, providing unparalleled insight into every transaction flowing through your gateway. This system is designed for complete operational awareness, allowing you to monitor, debug, and manage the entire gateway from a single pane of glass.</p>
                 
-                <div class="diagram-container mb-8">
-                    <div class="mermaid">
-                        graph TB
-                            A[Gateway Logs] --> B[Live WebSocket Stream]
-                            A --> C[Admin Dashboard]
-                            A --> D[File Storage]
-                            D --> E[Automatic Backup]
-                    </div>
-                </div>
-                
-                 <div class="bg-white p-8 rounded-xl border shadow-lg mb-10">
-                    <h3 class="text-2xl font-semibold text-dark mb-4 flex items-center"><i class="fas fa-tachometer-alt text-blue-500 mr-3"></i>Admin Dashboard</h3>
-                    <p class="text-gray-600">Grapthway includes a powerful, real-time web dashboard. Connect to it by providing your gateway URL and an admin token. It provides:</p>
-                    <ul class="list-disc pl-5 mt-4 space-y-2 text-gray-600">
-                        <li><b>Live Status:</b> View uptime, active services, instances, and pipeline counts.</li>
-                        <li><b>Service Explorer:</b> Browse all registered services and their instances, grouped by subgraph.</li>
-                        <li><b>Pipeline Viewer:</b> Inspect the configuration of all active middleware pipelines.</li>
-                        <li><b>Live Log Stream:</b> Watch gateway logs in real-time via a WebSocket connection.</li>
-                        <li><b>Historical Logs:</b> Query and view historical admin and schema change logs.</li>
+                <div class="bg-white p-8 rounded-xl border shadow-lg mb-10">
+                    <h3 class="text-2xl font-semibold text-dark mb-4 flex items-center"><i class="fas fa-cogs text-blue-500 mr-3"></i>The Asynchronous Logging Engine</h3>
+                    <p class="text-gray-600 mb-4">Performance is paramount. Our new logging system operates <b>fully asynchronously</b>, ensuring that comprehensive tracing has zero impact on request latency. Every log entry is now enriched with a unique <b>Trace ID</b>, allowing you to follow a single request's entire lifecycle across all services and pipeline steps.</p>
+                    <h4 class="font-semibold text-gray-800 mb-2">What's Logged?</h4>
+                    <ul class="list-disc pl-5 mt-2 text-gray-600 space-y-2">
+                        <li><b>Client Interaction:</b> Full headers and payloads for the initial request from the client and the final response sent back.</li>
+                        <li><b>Main Resolver/Endpoint:</b> The complete request and response for the primary downstream service call, whether it's GraphQL or REST.</li>
+                        <li><b>Every Pipeline Step:</b> Detailed request/response data (headers, body) for every single step in your `pre` and `post` pipelines.</li>
+                        <li><b>Concurrent & Rollback Actions:</b> We now capture logs for all concurrent (fire-and-forget) executions and every compensating transaction in your rollback chains.</li>
+                        <li><b>Admin & Schema Changes:</b> A full audit trail for administrative actions and any updates made to the GraphQL schema.</li>
                     </ul>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h3 class="font-bold text-lg mb-3 text-blue-600">Gateway Logs</h3>
-                        <p>Detailed traces of request/response cycles, including pipeline execution.</p>
-                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-gateway-logs</p>
+                <div class="bg-white p-8 rounded-xl border shadow-lg mb-10">
+                    <h3 class="text-2xl font-semibold text-dark mb-4 flex items-center"><i class="fas fa-tachometer-alt text-blue-500 mr-3"></i>The Admin Dashboard</h3>
+                    <p class="text-gray-600 mb-4">The monitoring dashboard has been rebuilt from the ground up to harness the power of the new logging engine. It provides a centralized hub for managing and observing your gateway's health and activity.</p>
+                    
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">Status Overview & Management</h4>
+                        <ul class="list-disc pl-5 mt-2 text-gray-600 space-y-2">
+                            <li><b>Health Overview:</b> Get a high-level summary of your gateway's health, including the total number of services, instances, pipelines, and overall uptime.</li>
+                            <li><b>Services Management:</b> Visualize all registered services and their instances, grouped by subgraph. See health status and connection details at a glance.</li>
+                            <li><b>Pipelines Configuration:</b> Inspect the complete configuration for every pipeline, for both GraphQL and REST, in an easy-to-read format.</li>
+                        </ul>
                     </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h3 class="font-bold text-lg mb-3 text-green-600">Admin Logs</h3>
-                        <p>A record of administrative actions like service registrations and config changes.</p>
-                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-admin-logs</p>
+                    
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">Hardware Monitoring</h4>
+                        <p class="text-gray-600">A new "Hardware" tab provides real-time visibility into the gateway container's resource consumption, reading directly from the container's cgroup filesystem. This is essential for performance tuning and capacity planning.</p>
+                        <ul class="list-disc pl-5 mt-2 text-gray-600 space-y-2">
+                            <li><b>Resource Allocation:</b> View the CPU core and memory limits allocated to the container.</li>
+                            <li><b>Live CPU & Memory Usage:</b> See real-time usage percentages for both CPU and RAM.</li>
+                            <li><b>Live I/O Statistics:</b> Monitor the current rate of network and disk I/O (bytes per second).</li>
+                        </ul>
                     </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h3 class="font-bold text-lg mb-3 text-purple-600">Schema Logs</h3>
-                        <p>An audit trail of all schema registrations, updates, and removals.</p>
-                        <p class="mt-2 font-mono text-sm bg-gray-100 p-2 rounded">GET /get-schema-logs</p>
+
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">Advanced Logging Interface</h4>
+                        <ul class="list-disc pl-5 mt-2 text-gray-600 space-y-2">
+                            <li><b>Unified Logging Views:</b> A central "Logging" section with multiple views:
+                                <ul class="list-circle pl-5 mt-1">
+                                    <li><b>Live Logs:</b> A real-time, WebSocket-powered stream of logs as they happen.</li>
+                                    <li><b>Historical Logs:</b> A paginated, searchable interface for deep-diving into past requests, with separate tabs for Gateway, Schema, and Admin events.</li>
+                                </ul>
+                            </li>
+                            <li><b>Powerful Filtering & Searching:</b>
+                                <ul class="list-circle pl-5 mt-1">
+                                    <li><b>Filter by Endpoint/Schema:</b> Instantly narrow down logs to a specific GraphQL subgraph or REST endpoint path.</li>
+                                    <li><b>Timeframe Selection:</b> Quickly select common timeframes (e.g., "Last 5 minutes", "Last 24 hours").</li>
+                                    <li><b>Full-Text Search:</b> A global keyword search that scans the entire content of log entries—including headers, payloads, and Trace IDs.</li>
+                                    <li><b>Persistent Search:</b> Search terms are remembered across sessions.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Interactive Schema Explorer</h4>
+                        <p class="text-gray-600">Browse, test, and interact with your unified GraphQL schema directly from the dashboard, providing a convenient way to validate and explore your API.</p>
                     </div>
                 </div>
+            </section>
+
+            <section id="api-reference" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">API Reference</h2>
+                <p class="mb-6 text-gray-600">This section details the administrative endpoints for managing the Grapthway gateway.</p>
                 
-                <h3 class="text-2xl font-semibold text-dark mb-4">Log Management</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="text-xl font-semibold text-gray-700 mb-3">Retention Configuration</h4>
-                        <div class="code-block">
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                            <pre><code class="language-bash"># Set log retention to 7 days
-curl -X POST "http://localhost:5000/log-config?retention=7" \
-  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-semibold text-gray-700 mb-3">Backup Configuration</h4>
-                        <div class="code-block">
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                            <pre><code class="language-bash"># Configure automatic backups
-curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
-  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
-                        </div>
-                    </div>
+                <h3 class="text-2xl font-semibold text-dark mb-4">Public Endpoints</h3>
+                <div class="overflow-x-auto bg-white rounded-lg border">
+                    <table class="api-table">
+                        <thead><tr><th>Endpoint</th><th>Description</th><th>Response</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method method-get">GET</span> /start</td>
+                                <td>Initializes the gateway and generates admin tokens. Should only be called once. Enterprise Edition with Redis can resume without this call.</td>
+                                <td><pre class="!p-2 !text-sm"><code>{\n  "message": "grapthway started...",\n  "tokens": ["..."],\n  "backupTokens": ["..."]\n}</code></pre></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method method-get">GET</span> /status</td>
+                                <td>A simple, public-facing health check.</td>
+                                <td><pre class="!p-2 !text-sm"><code>🚀 grapthway Gateway is running</code></pre></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-2xl font-semibold text-dark mt-10 mb-4">Admin Endpoints</h3>
+                <p class="mb-6 text-gray-600">All admin endpoints are prefixed with <code>/admin</code> and require a valid token passed as a URL query parameter (e.g., <code>?token=<your_token></code>).</p>
+                <div class="overflow-x-auto bg-white rounded-lg border">
+                    <table class="api-table">
+                        <thead><tr><th>Endpoint</th><th>Description</th><th>Payload / Response</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method method-post">POST</span> /health</td>
+                                <td>The primary endpoint for services to register themselves and report their health. Must be called every 30 seconds to stay active.</td>
+                                <td><b>Payload:</b> See <a href="#service-registration" class="text-blue-600 hover:underline">Service Registration</a>.<br><b>Response:</b> <code>Service registration processed successfully</code></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method method-get">GET</span> /gateway-status</td>
+                                <td>Provides detailed gateway metrics.</td>
+                                <td><b>Response:</b><pre class="!p-2 !text-sm"><code>{\n  "edition": "enterprise",\n  "uptime": "1h2m3s",\n  "total_services": 5,\n  "total_instances": 10,\n  "total_subgraphs": 2,\n  "total_pipelines": 8,\n  "storage_type": "redis"\n}</code></pre></td>
+                            </tr>
+                             <tr>
+                                <td><span class="method method-get">GET</span> /hardware-stats</td>
+                                <td>Provides real-time hardware usage statistics for the container.</td>
+                                <td><b>Response:</b><pre class="!p-2 !text-sm"><code>{\n  "cgroup_limits": {\n    "memory_limit_bytes": 8589934592,\n    "cpu_quota_cores": 2.5\n  },\n  "usage": {\n    "cpu_total_usage_percent": 15.7,\n    "ram_used_bytes": 1073741824,\n    "ram_total_bytes": 8589934592,\n    "ram_usage_percent": 12.5,\n    "net_sent_bps": 10240.5,\n    "net_recv_bps": 20480.1,\n    "disk_read_bps": 0,\n    "disk_write_bps": 5120\n  }\n}</code></pre></td>
+                            </tr>
+                            <tr>
+                                <td><span class="method method-get">GET</span> /services</td>
+                                <td>Lists all registered services and their instances.</td>
+                                <td><b>Response:</b> A map of service names to their instance details.</td>
+                            </tr>
+                             <tr>
+                                <td><span class="method method-get">GET</span> /pipelines</td>
+                                <td>Returns the complete JSON configuration for all active middleware pipelines.</td>
+                                <td><b>Response:</b> A map of field/route names to their pipeline configurations.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method method-get">GET</span> /logs/gateway</td>
+                                <td>Retrieves historical request logs. Supports `start`, `end`, and `max` query params.</td>
+                                <td><b>Response:</b> An array of log entry objects.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
             
-            <!-- Diagnostics -->
-            <section id="diagnostics" class="mb-24">
-                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Diagnostics & Troubleshooting</h2>
-                
-                <div class="bg-white rounded-xl shadow-lg p-6 mb-10">
-                    <h3 class="text-2xl font-semibold text-dark mb-4">Common Issues</h3>
-                    <div class="troubleshooting-grid">
-                        <div class="issue-card">
-                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Service not appearing</h4>
-                            <ul class="list-disc pl-5 mt-2 text-gray-600">
-                                <li>Verify service announcement frequency (30 seconds)</li>
-                                <li>Check gateway token in announcement request</li>
-                                <li>Confirm network connectivity between services</li>
-                                <li>Ensure the service name is unique</li>
-                            </ul>
-                        </div>
-                        <div class="issue-card">
-                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Schema not updating</h4>
-                            <ul class="list-disc pl-5 mt-2 text-gray-600">
-                                <li>Validate schema format in announcement payload</li>
-                                <li>Check for schema conflicts between services</li>
-                                <li>Confirm gateway has write access to storage</li>
-                                <li>Ensure schema version is increasing with each update</li>
-                            </ul>
-                        </div>
-                        <div class="issue-card">
-                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Pipeline step failing</h4>
-                            <ul class="list-disc pl-5 mt-2 text-gray-600">
-                                <li>Verify required context values are passed</li>
-                                <li>Check service health and availability</li>
-                                <li>Validate argument mapping configuration</li>
-                                <li>Review service permissions and access controls</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 class="text-2xl font-semibold text-dark mb-4">Diagnostic Endpoints</h3>
-                <p class="mb-6 text-gray-600">Use these administrative GET endpoints to inspect the live state of the gateway. An admin token is required.</p>
-                <div class="grid grid-cols-responsive gap-6">
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h4 class="font-bold text-lg text-gray-800 mb-3">Service & Schema Info</h4>
-                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/service</p>
-                        <p class="text-gray-600 text-sm mb-4">Lists all currently registered services and their instances, grouped by subgraph.</p>
-                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/schema</p>
-                        <p class="text-gray-600 text-sm">Returns the raw SDL schemas for all registered services.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h4 class="font-bold text-lg text-gray-800 mb-3">Gateway Status</h4>
-                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/gateway-status</p>
-                        <p class="text-gray-600 text-sm mb-4">Provides detailed gateway metrics including uptime, edition, storage type, and counts of services, instances, and pipelines.</p>
-                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/status</p>
-                        <p class="text-gray-600 text-sm">Basic gateway status and health information.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border">
-                        <h4 class="font-bold text-lg text-gray-800 mb-3">Pipeline Configuration</h4>
-                        <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">/get-pipelines</p>
-                        <p class="text-gray-600 text-sm">Returns the complete JSON configuration for all active middleware pipelines.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Enterprise -->
-            <section id="enterprise" class="mb-24">
-                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Enterprise Edition</h2>
+            <section id="editions" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Editions & Limits</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                     <div class="edition-card">
@@ -1005,14 +1019,15 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
                             <h3 class="text-2xl font-bold">Community Edition</h3>
                             <p class="mt-2">Free Forever</p>
                         </div>
-                        <div class="p-6">
+                        <div class="p-8">
                             <ul class="feature-list">
-                                <li><i class="fas fa-check-circle"></i> In-memory storage</li>
-                                <li><i class="fas fa-check-circle"></i> Up to 3 services per subgraph</li>
-                                <li><i class="fas fa-check-circle"></i> Max 2 subgraphs</li>
-                                <li><i class="fas fa-check-circle"></i> 2-day log retention</li>
-                                <li><i class="fas fa-check-circle"></i> Basic observability</li>
-                                <li><i class="fas fa-check-circle"></i> Community support</li>
+                                <li><i class="fas fa-memory"></i> In-memory storage only</li>
+                                <li><i class="fas fa-project-diagram"></i> Max <b>5</b> Subgraphs</li>
+                                <li><i class="fas fa-server"></i> Max <b>3</b> GraphQL services per Subgraph</li>
+                                <li><i class="fas fa-route"></i> Max <b>10</b> REST services (total)</li>
+                                <li><i class="fas fa-copy"></i> Max <b>2</b> instances per service</li>
+                                <li><i class="fas fa-calendar-alt"></i> 2-day log retention</li>
+                                <li><i class="fas fa-users"></i> Community support</li>
                             </ul>
                         </div>
                     </div>
@@ -1022,16 +1037,15 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
                             <h3 class="text-2xl font-bold">Enterprise Edition</h3>
                             <p class="mt-2">Production Ready</p>
                         </div>
-                        <div class="p-6">
+                        <div class="p-8">
                             <ul class="feature-list">
-                                <li><i class="fas fa-check-circle"></i> Redis persistence</li>
-                                <li><i class="fas fa-check-circle"></i> Unlimited services/subgraphs</li>
-                                <li><i class="fas fa-check-circle"></i> Custom log retention</li>
-                                <li><i class="fas fa-check-circle"></i> Priority support</li>
-                                <li><i class="fas fa-check-circle"></i> Advanced diagnostics</li>
-                                <li><i class="fas fa-check-circle"></i> High availability deployment</li>
-                                <li><i class="fas fa-check-circle"></i> SLA-backed support</li>
-                                <li><i class="fas fa-check-circle"></i> Custom extensions</li>
+                                <li><i class="fas fa-database"></i> Redis persistence & HA resume</li>
+                                <li><i class="fas fa-infinity"></i> Unlimited services & subgraphs</li>
+                                <li><i class="fas fa-infinity"></i> Unlimited instances per service</li>
+                                <li><i class="fas fa-calendar-alt"></i> Custom log retention</li>
+                                <li><i class="fas fa-headset"></i> Priority support & SLAs</li>
+                                <li><i class="fas fa-cogs"></i> Advanced diagnostics & features</li>
+                                <li><i class="fas fa-file-contract"></i> Custom extensions available</li>
                             </ul>
                         </div>
                     </div>
@@ -1041,23 +1055,6 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
                     <div class="text-center">
                         <h3 class="text-3xl text-white font-bold mb-4">Ready for Production Scale?</h3>
                         <p class="max-w-2xl text-white mx-auto mb-8">The Enterprise Edition unlocks Grapthway's full potential for mission-critical applications.</p>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-dark mb-8">
-                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
-                                <i class="fas fa-database text-3xl text-blue-500 mb-4"></i>
-                                <p class="font-bold">Redis Persistence</p>
-                                <p class="text-sm">High-performance, persistent storage for stateful, scalable deployments.</p>
-                            </div>
-                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
-                                <i class="fas fa-infinity text-3xl text-purple-500 mb-4"></i>
-                                <p class="font-bold">Unlimited Scale</p>
-                                <p class="text-sm">No limits on the number of services, instances, or subgraphs.</p>
-                            </div>
-                            <div class="bg-white/90 p-6 rounded-lg shadow-lg">
-                                <i class="fas fa-headset text-3xl text-green-500 mb-4"></i>
-                                <p class="font-bold">Priority Support</p>
-                                <p class="text-sm">Direct access to our engineering team for support and feature requests.</p>
-                            </div>
-                        </div>
                         <a href="mailto:fargan109@gmail.com" class="inline-block bg-white hover:bg-gray-200 text-indigo-600 font-bold py-3 px-8 rounded-lg transition text-lg shadow-lg hover:scale-105">
                             Contact Sales for a License
                         </a>
@@ -1065,13 +1062,48 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
                 </div>
             </section>
 
-            <!-- Footer -->
+            <section id="diagnostics" class="mb-24">
+                <h2 class="text-3xl font-bold text-dark mb-8 section-title">Diagnostics & Troubleshooting</h2>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-10">
+                    <h3 class="text-2xl font-semibold text-dark mb-4">Common Issues</h3>
+                    <div class="troubleshooting-grid">
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Service Not Appearing</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Verify service announcement frequency (every 30s to `/admin/health`).</li>
+                                <li>Check for a valid admin token in the announcement request.</li>
+                                <li>Ensure network connectivity from your service to the gateway.</li>
+                                <li>Check if you have hit a service limit in the Community Edition.</li>
+                            </ul>
+                        </div>
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>404 Not Found for REST Route</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Ensure the service is registered and healthy.</li>
+                                <li>Verify the `path` in the service registration exactly matches the prefix of the request URL.</li>
+                                <li>The gateway uses longest-prefix matching; check for conflicting services.</li>
+                            </ul>
+                        </div>
+                        <div class="issue-card">
+                            <h4 class="font-bold text-lg text-gray-700"><i class="fas fa-exclamation-triangle text-red-500"></i>Pipeline Step Failing</h4>
+                            <ul class="list-disc pl-5 mt-2 text-gray-600">
+                                <li>Check the gateway logs for detailed error messages from the pipeline executor.</li>
+                                <li>Verify the `service` defined in the step is registered and healthy.</li>
+                                <li>For GraphQL steps, ensure the `field` exists. For REST steps, ensure the `method` and `path` are correct.</li>
+                                <li>Check `passHeaders`, `argsMapping`, and `bodyMapping` configurations.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <footer class="border-t pt-10 mt-16 text-center text-gray-500">
                 <p>
                     Crafted with ❤️ by <a href="https://github.com/farisbahdlor" class="text-blue-600 hover:underline font-semibold">@farisbahdlor</a>
                 </p>
                 <p class="mt-2 text-sm">
-                    &copy; 2025 Grapthway Project. Community and Enterprise editions available.
+                    &copy; 2025 Grapthway Project. v2.0
                 </p>
             </footer>
         </main>
@@ -1094,7 +1126,7 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
         
         // Copy button functionality
         function copyCode(button) {
-            const pre = button.nextElementSibling;
+            const pre = button.parentElement.querySelector('pre');
             const code = pre.querySelector('code');
             const text = code.innerText;
             
@@ -1104,7 +1136,7 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
                 button.classList.add('bg-green-500');
                 
                 setTimeout(() => {
-                    button.innerHTML = originalText;
+                    button.innerHTML = 'Copy';
                     button.classList.remove('bg-green-500');
                 }, 2000);
             }).catch(err => {
@@ -1137,14 +1169,13 @@ curl -X POST "http://localhost:5000/log-backup?url=https://backup.example.com" \
         const tabs = document.querySelectorAll('.example-tab');
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // Remove active class from all tabs and content
-                document.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
+                const tabContainer = tab.closest('.example-tabs').parentElement;
+                tabContainer.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
+                tabContainer.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
                 
-                // Add active class to clicked tab and corresponding content
                 tab.classList.add('active');
-                const target = tab.getAttribute('data-target');
-                document.getElementById(target).classList.add('active');
+                const targetId = tab.getAttribute('data-target');
+                tabContainer.querySelector('#' + targetId).classList.add('active');
             });
         });
     </script>

@@ -22,7 +22,7 @@ import (
 
 // --- Configuration ---
 const (
-	gatewayToken = "9444b1a30dc2174e69233e3908f8bb61"
+	gatewayToken = "7f7756c9491e223db0fa8dc516f72584"
 	serviceName  = "auth-service"
 	subgraph     = "auth"
 	jwtSecret    = "ThisMySecret"
@@ -263,7 +263,7 @@ func announce(port int) {
 		gatewayURL = "http://localhost:5000"
 	}
 	selfURL := fmt.Sprintf("http://host.docker.internal:%d/graphql", port)
-	healthURL := fmt.Sprintf("%s/health?token=%s", gatewayURL, gatewayToken)
+	healthURL := fmt.Sprintf("%s/admin/health?token=%s", gatewayURL, gatewayToken)
 
 	schemaString, err := getGraphQLSchemaString()
 	if err != nil {
@@ -342,7 +342,7 @@ func main() {
 	buildGraphQLSchema()
 
 	startPort := 4000
-	endPort := 4002
+	endPort := 4001
 	var wg sync.WaitGroup
 
 	for port := startPort; port <= endPort; port++ {

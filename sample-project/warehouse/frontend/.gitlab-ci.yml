@@ -1,0 +1,23 @@
+stages:
+  - build
+  - deploy
+
+before_script:
+  - echo "Starting frontend CI/CD pipeline"
+  - echo "Using runner FE-runner"
+
+build:
+  stage: build
+  tags:
+    - build
+  script:
+    - docker build -t pos-igtc-network-fe:latest .
+
+deploy:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - docker stop pos-igtc-network-fe || true
+    - docker rm pos-igtc-network-fe || true
+    - docker run -d -p 4000:3000 --name pos-igtc-network-fe --restart always pos-igtc-network-fe:latest
