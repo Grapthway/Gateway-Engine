@@ -548,21 +548,55 @@ docker run -d -p 5000:5000 \
                     <p class="text-blue-800"><i class="fas fa-info-circle mr-2"></i><strong>Note on Backward Compatibility:</strong> Your existing v1.5 `middlewareMap` configurations for GraphQL pipelines are fully compatible with v2.0 and will continue to work without any changes.</p>
                 </div>
 
+                <h3 class="text-2xl font-semibold text-dark mb-4">The Pipeline Context & Data Access</h3>
+                <p class="mb-6 text-gray-600">
+                    The key to using pipelines effectively is understanding the <strong>pipeline context</strong>. This is an in-memory JSON object that is created at the start of a request and passed through each step. You use it to get initial data (like request arguments) and to pass data between steps.
+                </p>
+
+                <div class="info-box mb-8">
+                    <h4 class="font-bold text-blue-800 mb-2"><i class="fas fa-lightbulb mr-2"></i>Data Access Syntax</h4>
+                    <p class="text-blue-800">You access data from the context using <strong>dot notation</strong>. For example, to get the `email` from a `user` object in the context, you would use the string <code>"user.email"</code>.</p>
+                </div>
+
+                <h4 class="text-xl font-semibold text-gray-800 mb-3">Initial Context (<code class="text-md">pre</code> pipeline)</h4>
+                <p class="mb-4 text-gray-600">Before the <code class="text-sm">pre</code> pipeline runs, the gateway populates the context with data from the original request:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-600 mb-6">
+                    <li>
+                        <strong>For GraphQL requests:</strong> All incoming arguments (variables) are placed in an object under the key <code>args</code>. You can access them with <code>"args.yourArgumentName"</code>.
+                    </li>
+                    <li>
+                        <strong>For REST requests:</strong> The JSON request body is parsed and placed in an object under the key <code>request.body</code>. You can access its fields with <code>"request.body.yourFieldName"</code>.
+                    </li>
+                </ul>
+
+                <div class="tip-box-alt mb-8">
+                    <p class="text-purple-800"><i class="fas fa-wrench mr-2"></i><strong>Note on URL Path Parameters:</strong> The current implementation does not automatically parse URL path parameters (like <code>/users/{id}</code>) into the pipeline context. Data must be sourced from either the GraphQL arguments or the REST request body. Example 5 has been updated to reflect a working approach where the ID is retrieved from the main handler's response in the <code>post</code> pipeline instead.</p>
+                </div>
+
+                <h4 class="text-xl font-semibold text-gray-800 mb-3">Merged Context (<code class="text-md">post</code> pipeline)</h4>
+                <p class="mb-4 text-gray-600">After your main service logic runs, the gateway creates a new, <strong>merged context</strong> for the <code>post</code> pipeline. This context contains:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                    <li>All data from the final <code>pre</code> pipeline context (e.g., anything you saved with <code>assign</code>).</li>
+                    <li>All top-level fields from the main service's JSON response.</li>
+                </ul>
+                <p class="text-gray-600 mb-8">This allows you to easily use both the initial session data and the result of the core operation in your follow-up tasks, as shown in the examples.</p>
+
                 <h3 class="text-2xl font-semibold text-dark mb-4">Pipeline Step Configuration</h3>
                 <p class="mb-6 text-gray-600">Each step in a pipeline is a JSON object with the following properties:</p>
                 <div class="bg-white rounded-lg border p-6 mb-10">
                     <ul class="list-none space-y-4">
                         <li><code><strong>service</strong>: string</code> <span class="text-gray-500">- The name of the registered service to call.</span></li>
                         <li><code><strong>field</strong>: string</code> <span class="text-gray-500">- (GraphQL only) The query or mutation to execute.</span></li>
-                        <li><code><strong>selection</strong>: string[]</code> <span class="text-gray-500">- (GraphQL only) Specifies which fields to return, reducing payload size. E.g., <code>["id", "name", "address { city }"]</code>.</span></li>
-                        <li><code><strong>method</strong>: string</code> <span class="text-gray-500">- (REST only) The HTTP method (e.g., "GET", "POST").</span></li>
-                        <li><code><strong>path</strong>: string</code> <span class="text-gray-500">- (REST only) The endpoint path (e.g., "/items/{id}").</span></li>
-                        <li><code><strong>bodyMapping</strong>: object</code> <span class="text-gray-500">- (REST only) Maps context data to a JSON request body.</span></li>
-                        <li><code><strong>passHeaders</strong>: string[]</code> <span class="text-gray-500">- An array of headers to pass from the original request.</span></li>
-                        <li><code><strong>assign</strong>: object</code> <span class="text-gray-500">- Maps response data from this step into the pipeline context. e.g., <code>{"userCtx": "user"}</code>.</span></li>
-                        <li><code><strong>argsMapping</strong>: object</code> <span class="text-gray-500">- (GraphQL only) Maps data from context to arguments for this step's call.</span></li>
-                        <li><code><strong>concurrent</strong>: boolean</code> <span class="text-gray-500">- If true, the gateway executes this step without waiting for a response (fire-and-forget). Defaults to false.</span></li>
-                        <li><code><strong>onError</strong>: object</code> <span class="text-gray-500">- Defines failure behavior for this step, including a <code>"rollback"</code> array of compensating steps.</span></li>
+                        <li><code><strong>operation</strong>: string</code> <span class="text-gray-500">- (GraphQL only) Defines the operation type (e.g., "mutation"). The system now infers this automatically, but the field is kept for backward compatibility.</span></li>
+                        <li><code><strong>selection</strong>: string[]</code> <span class="text-gray-500">- (GraphQL only) Specifies which fields to return from the step's response, reducing payload size. Supports nested selections.</span></li>
+                        <li><code><strong>method</strong>: string</code> <span class="text-gray-500">- (REST only) The HTTP method (e.g., "POST").</span></li>
+                        <li><code><strong>path</strong>: string</code> <span class="text-gray-500">- (REST only) The endpoint path for the downstream service.</span></li>
+                        <li><code><strong>argsMapping</strong>: object</code> <span class="text-gray-500">- (GraphQL only) Maps data to arguments for the downstream call. Values can be dynamic from the context (e.g., <code>"userId": "user.id"</code>) or static/hardcoded (e.g., <code>"source": "gateway"</code>).</span></li>
+                        <li><code><strong>bodyMapping</strong>: object</code> <span class="text-gray-500">- (REST only) Maps data to the JSON request body. Also supports both dynamic context values and static values (e.g., <code>"status": "PROCESSED"</code>).</span></li>
+                        <li><code><strong>passHeaders</strong>: string[]</code> <span class="text-gray-500">- An array of headers to pass from the original client request to this step's service.</span></li>
+                        <li><code><strong>assign</strong>: object</code> <span class="text-gray-500">- (Blocking steps only) Maps response data from this step into the pipeline context. Use <code>"key": "fieldName"</code> to get a specific field or <code>"key": "*"</code> to get the entire result object.</span></li>
+                        <li><code><strong>concurrent</strong>: boolean</code> <span class="text-gray-500">- If true, the gateway executes this step without waiting (fire-and-forget) and cannot assign data back to the context. Defaults to false.</span></li>
+                        <li><code><strong>onError</strong>: object</code> <span class="text-gray-500">- Defines failure behavior. <code>"stop": true</code> aborts the request. A <code>"rollback"</code> array defines compensating steps to run if this blocking step fails.</span></li>
                     </ul>
                 </div>
                 
@@ -799,34 +833,31 @@ docker run -d -p 5000:5000 \
                     <p class="mb-4 text-gray-600">A user updates their profile and uploads a new avatar via a multipart/form-data request to a REST endpoint. A `pre` step verifies ownership (GraphQL). After the main handler saves the profile text and the file path, a `post` step triggers a REST-based image processing service to create thumbnails (concurrent).</p>
                     <div class="code-block mb-8">
                         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        <pre><code class="language-javascript">// Attached to REST endpoint: PUT /users/{id}/profile
-// The main REST handler is assumed to return a response like: { "id": "usr_456", "avatarUrl": "https://cdn.com/path/to/image.jpg" }
+                        <pre><code class="language-javascript">// Attached to REST endpoint: POST /users/profile/update
+// Main handler returns: { "id": "usr_456", "avatarUrl": "https://cdn.com/path/to/image.jpg" }
 {
-  "PUT /users/{id}/profile": {
+  "POST /users/profile/update": {
     "pre": [
       {
-        "service": "auth-gql", // 1. Call a GraphQL service to verify the user is allowed to edit this profile.
-        "field": "verifyProfileOwnership",
+        "service": "auth-gql", // 1. Verify the user is authenticated before allowing an update.
+        "field": "validateSession",
         "passHeaders": ["Authorization"],
-        "argsMapping": { 
-          // Get the 'id' from the URL path of the original request and use it as an argument.
-          "profileId": "request.path.id" 
-        },
-        "onError": { "stop": true } // If not the owner, stop the request.
+        "assign": { "user": "user" }, // Save user context
+        "onError": { "stop": true } 
       }
     ],
     "post": [
       {
-        "service": "image-processor-api", // 2. After the profile is updated, trigger a background job to process the new avatar.
+        "service": "image-processor-api", // 2. After profile update, process the new avatar.
         "method": "POST",
         "path": "/process/new-avatar",
         "bodyMapping": {
-            // Get the public URL of the newly uploaded avatar from the main REST response.
-            "source_url": "avatarUrl",
-            // Get the user's ID from the main REST response.
-            "user_id": "id"
+          // Get the public URL of the avatar from the main REST response.
+          "source_url": "avatarUrl",
+          // Get the user's ID from the main REST response.
+          "user_id": "id"
         },
-        "concurrent": true // Fire-and-forget; let the image processor work in the background.
+        "concurrent": true // Fire-and-forget.
       }
     ]
   }
