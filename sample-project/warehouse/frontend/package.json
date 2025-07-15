@@ -1,0 +1,40 @@
+{
+  "name": "IGTC NETWORK",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@next/font": "^14.2.3",
+    "@nextui-org/date-picker": "^2.1.1",
+    "@nextui-org/react": "^2.4.1",
+    "@nextui-org/system": "^2.2.1",
+    "@nextui-org/theme": "^2.2.5",
+    "@reduxjs/toolkit": "^2.2.5",
+    "animate.css": "^4.1.1",
+    "axios": "^1.7.2",
+    "loadjs": "^4.3.0",
+    "next": "^14.2.23",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-icons": "^5.2.1",
+    "react-redux": "^9.1.2",
+    "react-tooltip": "^5.26.4",
+    "tailwind-animatecss": "^1.0.0",
+    "web3": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/loadjs": "^4.0.4",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "daisyui": "^4.11.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,98 @@
+
+  TEST CONTEXT & SCENARIO DETAILS
+================================================================
+  This report details the performance of complex GraphQL pipeline
+  resolvers under a simulated load. All tests were executed from
+  a single machine with the following specifications:
+
+  LOAD GENERATOR HARDWARE:
+  --------------------------------------------------------------
+  System Manufacturer.......: ASUSTeK COMPUTER INC.
+  System Model..............: ASUS Vivobook 15
+  Operating System..........: Windows 11 Home 64-bit
+  Processor.................: Intel(R) Core(TM) 7 150U (~1.8GHz, 12 CPUs)
+  Memory....................: 24 GB RAM
+
+  MICROSERVICE SPECIFICATION
+  --------------------------------------------------------------
+  FrameWork (Node JS)
+  Auth Service..............: 2 Instance
+  Category Service..........: 2 Instance
+  Inventory Service.........: 2 Instance
+  Shipping Service..........: 2 Instance
+  Warehouse Activity Service: 2 Instance
+
+  SCENARIO PIPELINE DETAILS:
+  --------------------------------------------------------------
+  1. CREATE WAREHOUSE RELATION: A 2-step pipeline involving:
+     - Step 1: Authenticate the requesting user.
+     - Step 2: Look up the partner user by email.
+     - Main Logic: Create the relation in the database.
+
+  2. CREATE SHIPPING: A complex 6-step pipeline involving:
+     - Pre-flight 1: Authenticate sender.
+     - Pre-flight 2: Get recipient by email.
+     - Pre-flight 3: Check for an active warehouse relation.
+     - Pre-flight 4: Decrease sender's inventory stock (bulk).
+     - Main Logic: Create the core shipping record.
+     - Post-flight 1: Update/create recipient's inventory (bulk).
+     - Post-flight 2: Log activity asynchronously (fire-and-forget).
+
+  3. DELETE SHIPPING: A 3-step pipeline for cancellation:
+     - Pre-flight 1: Authenticate the user.
+     - Pre-flight 2: Fetch full shipment details for rollback.
+     - Pre-flight 3: Roll back inventory changes for both parties.
+     - Main Logic: Delete the core shipping record.
+================================================================
+  
+  LOAD TEST SUMMARY
+================================================================
+  Test Duration.............: N/A
+  Total Requests............: 2212
+  Failed Requests...........: 0 (0.00%)
+  Requests per second (RPS)...: 0.00/s
+================================================================
+
+  SCENARIO: AUTHENTICATION (SIMPLE)
+  --------------------------------------------------------------
+  Total Requests............: 263
+  Avg response time.........: 461.96ms
+  Min response time.........: 225.00ms
+  Median response time......: 452.00ms
+  p(90) response time.......: 765.80ms
+  p(95) response time.......: 857.70ms
+  p(99) response time.......: 1286.55ms (estimated)
+  Max response time.........: 1241.00ms
+
+  SCENARIO: CREATE WAREHOUSE RELATION (PIPELINE)
+  --------------------------------------------------------------
+  Total Requests............: 296
+  Avg response time.........: 33.78ms
+  Min response time.........: 21.00ms
+  Median response time......: 33.00ms
+  p(90) response time.......: 43.00ms
+  p(95) response time.......: 45.25ms
+  p(99) response time.......: 67.88ms (estimated)
+  Max response time.........: 64.00ms
+
+  SCENARIO: CREATE SHIPPING (PIPELINE)
+  --------------------------------------------------------------
+  Total Requests............: 291
+  Avg response time.........: 63.16ms
+  Min response time.........: 44.00ms
+  Median response time......: 61.00ms
+  p(90) response time.......: 77.00ms
+  p(95) response time.......: 84.50ms
+  p(99) response time.......: 126.75ms (estimated)
+  Max response time.........: 133.00ms
+
+  SCENARIO: DELETE SHIPPING (PIPELINE)
+  --------------------------------------------------------------
+  Total Requests............: 303
+  Avg response time.........: 42.68ms
+  Min response time.........: 26.00ms
+  Median response time......: 41.00ms
+  p(90) response time.......: 54.00ms
+  p(95) response time.......: 58.90ms
+  p(99) response time.......: 88.35ms (estimated)
+  Max response time.........: 103.00ms

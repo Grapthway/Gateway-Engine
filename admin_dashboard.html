@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gateway Monitor</title>
+    <title>Grapthway Gateway Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
     <style>
         :root {
             --primary: #3b82f6; --secondary: #10b981; --dark: #1f2937;
@@ -14,20 +15,46 @@
         }
         body { font-family: 'Inter', sans-serif; }
         .tab.active { border-color: var(--primary); color: var(--primary); background-color: white; }
+        .sub-tab.active { border-color: var(--primary); color: var(--primary); background-color: #eff6ff; }
         .log-container { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
         #login-modal, #details-modal { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         .modal-content { animation: fadeIn 0.2s ease-out; }
-        /* Styles for collapsible logs */
         .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
-        .log-entry.open .collapsible-content { max-height: 1000px; /* Increased max-height */ }
+        .log-entry.open .collapsible-content { max-height: 4000px; }
+        .group:hover .group-chevron { transform: translateY(2px); }
+        .log-entry.open .group-chevron { transform: rotate(180deg); }
+        /* Diff styles */
+        .diff-line { display: block; white-space: pre; }
+        .diff-line.added { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
+        .diff-line.removed { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; }
+        .diff-line.neutral { color: #6b7280; }
+        .diff-line::before { display: inline-block; width: 1.5em; text-align: center; }
+        .diff-line.added::before { content: '+'; }
+        .diff-line.removed::before { content: '-'; }
+        /* Custom progress bar styles */
+        .progress-bar {
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            height: 1rem;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 0.5rem;
+            transition: width 0.5s ease-in-out;
+            background-color: var(--primary);
+        }
     </style>
 </head>
 <body class="h-full bg-gray-100 text-gray-800">
 
     <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all modal-content">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all modal-content relative">
+             <button onclick="this.parentElement.parentElement.style.display='none'" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
             <div class="text-center">
                 <i class="fa-solid fa-shield-halved text-5xl text-primary mx-auto"></i>
                 <h2 class="text-2xl font-bold text-dark mt-4">Gateway Access</h2>
@@ -54,7 +81,10 @@
     </div>
 
     <div id="details-modal" class="fixed inset-0 z-40 flex items-center justify-center p-4 hidden" onclick="closeDetailsModal()">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto modal-content relative" onclick="event.stopPropagation()">
+            <button onclick="closeDetailsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
             <div id="details-modal-content" class="p-8"></div>
         </div>
     </div>
@@ -67,34 +97,216 @@
         </div>
 
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-dark tracking-tight"><i class="fa-solid fa-project-diagram text-primary"></i> Gateway Monitor</h1>
+            <h1 class="text-4xl font-extrabold text-dark tracking-tight"><i class="fa-solid fa-project-diagram text-primary"></i> Grapthway Monitor</h1>
             <p class="text-lg text-gray mt-2">Real-time monitoring of services, pipelines, and logs.</p>
         </header>
 
         <div class="tabs flex border-b border-gray-200 mb-6 overflow-x-auto">
             <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="status"><i data-lucide="activity" class="inline-block w-5 h-5 mr-2"></i>Status</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="hardware"><i data-lucide="hard-drive" class="inline-block w-5 h-5 mr-2"></i>Hardware</button>
             <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="services"><i data-lucide="server-cog" class="inline-block w-5 h-5 mr-2"></i>Services</button>
             <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="pipelines"><i data-lucide="milestone" class="inline-block w-5 h-5 mr-2"></i>Pipelines</button>
-            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="logs"><i data-lucide="terminal" class="inline-block w-5 h-5 mr-2"></i>Live Logs</button>
-            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="admin-logs"><i data-lucide="user-cog" class="inline-block w-5 h-5 mr-2"></i>Admin Logs</button>
-            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="schema-logs"><i data-lucide="file-text" class="inline-block w-5 h-5 mr-2"></i>Schema Logs</button>
+            <button class="tab flex-1 py-4 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-tab="logging"><i data-lucide="terminal" class="inline-block w-5 h-5 mr-2"></i>Logging</button>
         </div>
 
         <div class="tab-content fade-in" id="status-tab"></div>
-        <div class="tab-content hidden fade-in" id="services-tab"></div>
-        <div class="tab-content hidden fade-in" id="pipelines-tab"></div>
-        <div class="tab-content hidden fade-in" id="logs-tab"><div class="log-container bg-dark text-light p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="log-container"></div></div>
-        <div class="tab-content hidden fade-in" id="admin-logs-tab"><div class="bg-white p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="admin-log-container"></div></div>
-        <div class="tab-content hidden fade-in" id="schema-logs-tab"><div class="bg-white p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="schema-log-container"></div></div>
+        
+        <div class="tab-content hidden fade-in" id="hardware-tab">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Resource Allocation -->
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-dark mb-4 flex items-center">
+                        <i data-lucide="box" class="w-6 h-6 mr-3 text-primary"></i> Container Allocation
+                    </h3>
+                    <div class="space-y-4 text-gray-700">
+                        <div id="hw-cpu-allocation">Loading...</div>
+                        <div id="hw-mem-allocation">Loading...</div>
+                    </div>
+                </div>
+                <!-- Live Usage -->
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-dark mb-4 flex items-center">
+                        <i data-lucide="activity" class="w-6 h-6 mr-3 text-secondary"></i> Live Usage
+                    </h3>
+                    <div class="space-y-4">
+                        <!-- CPU Usage -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold">CPU Usage</span>
+                                <span id="cpu-usage-percent" class="font-mono text-primary">...</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="cpu-usage-bar" class="progress-bar-inner"></div>
+                            </div>
+                        </div>
+                        <!-- RAM Usage -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold">Memory Usage</span>
+                                <span id="ram-usage-text" class="font-mono text-primary">...</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="ram-usage-bar" class="progress-bar-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- I/O Stats -->
+                <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2">
+                    <h3 class="text-lg font-bold text-dark mb-4 flex items-center">
+                        <i data-lucide="arrow-left-right" class="w-6 h-6 mr-3 text-amber-500"></i> I/O Statistics (per second)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                        <!-- Network I/O -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-600 mb-2">Network I/O</h4>
+                            <div class="flex justify-around">
+                                <div>
+                                    <p class="text-xs text-gray-500">Sent</p>
+                                    <p id="net-sent-text" class="text-xl font-bold font-mono text-dark">...</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Received</p>
+                                    <p id="net-recv-text" class="text-xl font-bold font-mono text-dark">...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Disk I/O -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-600 mb-2">Disk I/O</h4>
+                            <div class="flex justify-around">
+                                <div>
+                                    <p class="text-xs text-gray-500">Write</p>
+                                    <p id="disk-write-text" class="text-xl font-bold font-mono text-dark">...</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Read</p>
+                                    <p id="disk-read-text" class="text-xl font-bold font-mono text-dark">...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content hidden fade-in" id="services-tab">
+            <div class="mb-4">
+                <input type="text" id="service-search" placeholder="Search services..." class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+            </div>
+            <div id="services-container"></div>
+        </div>
+        <div class="tab-content hidden fade-in" id="pipelines-tab">
+             <div class="mb-4">
+                <input type="text" id="pipeline-search" placeholder="Search pipelines..." class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+            </div>
+            <div id="pipelines-container"></div>
+        </div>
+        
+        <div class="tab-content hidden fade-in" id="logging-tab">
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <div class="sub-tabs flex border-b border-gray-200 mb-4 overflow-x-auto">
+                    <button class="sub-tab flex-1 py-3 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-subtab="live-logs"><i data-lucide="radio-tower" class="inline-block w-5 h-5 mr-2"></i>Live</button>
+                    <button class="sub-tab flex-1 py-3 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-subtab="gateway-logs"><i data-lucide="arrow-left-right" class="inline-block w-5 h-5 mr-2"></i>Gateway</button>
+                    <button class="sub-tab flex-1 py-3 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-subtab="schema-logs"><i data-lucide="file-cog" class="inline-block w-5 h-5 mr-2"></i>Schema</button>
+                    <button class="sub-tab flex-1 py-3 px-2 text-center font-semibold text-gray-500 hover:bg-gray-50 border-b-2 border-transparent transition whitespace-nowrap" data-subtab="admin-logs"><i data-lucide="shield" class="inline-block w-5 h-5 mr-2"></i>Admin</button>
+                </div>
+
+                <div class="sub-tab-content" id="live-logs-content">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <select id="live-log-type-filter" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <option value="all" selected>All Log Types</option>
+                            <option value="gateway">Gateway Logs</option>
+                            <option value="schema">Schema Logs</option>
+                            <option value="admin">Admin Logs</option>
+                        </select>
+                        <select id="live-log-service-filter" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary hidden md:col-span-2">
+                            </select>
+                    </div>
+                    <div class="log-container bg-dark text-light p-4 sm:p-6 rounded-lg shadow-inner h-[600px] overflow-y-auto" id="live-log-container"></div>
+                </div>
+
+                <div class="sub-tab-content hidden" data-log-type="gateway">
+                    <div class="historical-controls grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <select class="timeframe-selector w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <option value="5m">Last 5 minutes</option>
+                            <option value="15m">Last 15 minutes</option>
+                            <option value="1h">Last 1 hour</option>
+                            <option value="24h" selected>Last 24 hours</option>
+                            <option value="7d">Last 7 days</option>
+                        </select>
+                        <select class="service-name-filter w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                        </select>
+                        <input type="text" class="keyword-search w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary md:col-span-1" placeholder="Search by keyword...">
+                        <button class="refresh-logs-btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center justify-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="log-container bg-white border border-gray-200 p-2 sm:p-4 rounded-lg shadow-inner h-[600px] overflow-y-auto historical-log-container"></div>
+                    <div class="pagination-controls flex justify-between items-center mt-4"></div>
+                </div>
+                <div class="sub-tab-content hidden" data-log-type="schema">
+                    <div class="historical-controls grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <select class="timeframe-selector w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <option value="5m">Last 5 minutes</option>
+                            <option value="15m">Last 15 minutes</option>
+                            <option value="1h">Last 1 hour</option>
+                            <option value="24h" selected>Last 24 hours</option>
+                            <option value="7d">Last 7 days</option>
+                        </select>
+                        <select class="service-name-filter w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                        </select>
+                        <input type="text" class="keyword-search w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary" placeholder="Search by schema name...">
+                        <button class="refresh-logs-btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center justify-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="log-container bg-white border border-gray-200 p-2 sm:p-4 rounded-lg shadow-inner h-[600px] overflow-y-auto historical-log-container"></div>
+                    <div class="pagination-controls flex justify-between items-center mt-4"></div>
+                </div>
+                <div class="sub-tab-content hidden" data-log-type="admin">
+                    <div class="historical-controls grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <select class="timeframe-selector w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <option value="5m">Last 5 minutes</option>
+                            <option value="15m">Last 15 minutes</option>
+                            <option value="1h">Last 1 hour</option>
+                            <option value="24h" selected>Last 24 hours</option>
+                            <option value="7d">Last 7 days</option>
+                        </select>
+                        <input type="text" class="keyword-search w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary" placeholder="Search by IP, token, etc...">
+                        <button class="refresh-logs-btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center justify-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="log-container bg-white border border-gray-200 p-2 sm:p-4 rounded-lg shadow-inner h-[600px] overflow-y-auto historical-log-container"></div>
+                    <div class="pagination-controls flex justify-between items-center mt-4"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // --- App State & Config ---
         let config = { gatewayUrl: '', token: '' };
-        let state = { services: null, pipelines: null, status: null, adminLogs: [], schemaLogs: [] };
+        let state = { 
+            services: null, pipelines: null, status: null, hardware: null,
+            subgraphNames: [],
+            serviceToSubgraphMap: {},
+            search: { services: '', pipelines: '' },
+            logs: {
+                gateway: { data: [], filtered: [], currentPage: 1, logsPerPage: 20, query: '', serviceFilter: 'all' },
+                schema: { data: [], filtered: [], currentPage: 1, logsPerPage: 20, query: '', serviceFilter: 'all' },
+                admin: { data: [], filtered: [], currentPage: 1, logsPerPage: 20, query: '' }
+            },
+            live: {
+                logTypeFilter: 'all',
+                serviceFilter: 'all'
+            }
+        };
         let oldState = JSON.parse(JSON.stringify(state));
         let logSocket;
         let fetchInterval;
+        let debounceTimers = {};
 
         // --- DOM Elements ---
         const loginModal = document.getElementById('login-modal');
@@ -104,18 +316,24 @@
         const detailsModalContent = document.getElementById('details-modal-content');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
+        const subTabs = document.querySelectorAll('.sub-tab');
+        const logSubTabContents = {
+            'live-logs': document.getElementById('live-logs-content'),
+            'gateway-logs': document.querySelector('.sub-tab-content[data-log-type="gateway"]'),
+            'schema-logs': document.querySelector('.sub-tab-content[data-log-type="schema"]'),
+            'admin-logs': document.querySelector('.sub-tab-content[data-log-type="admin"]')
+        };
 
         // --- Utility Functions ---
-        const apiFetch = async (endpoint) => {
+        const apiFetch = async (endpoint, params = {}) => {
             try {
-                const separator = endpoint.includes('?') ? '&' : '?';
-                const url = `${config.gatewayUrl}${endpoint}${separator}token=${config.token}`;
+                const query = new URLSearchParams(params);
+                query.append('token', config.token);
+                const url = `${config.gatewayUrl}/admin${endpoint}?${query.toString()}`;
                 
                 const response = await fetch(url);
                 if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        logout();
-                    }
+                    if (response.status === 401 || response.status === 403) logout();
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 return await response.json();
@@ -129,34 +347,57 @@
             const icon = lucide.icons[iconName];
             return icon ? icon.toSvg({ class: classes }) : '';
         };
+        
+        const formatBytes = (bytes, decimals = 2) => {
+            if (!bytes || bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        };
 
-        const syntaxHighlight = (json) => {
-            if (!json) return '';
-            let jsonData = json;
-            if (typeof json !== 'string') {
-                jsonData = JSON.stringify(json, undefined, 2);
-            }
-            jsonData = jsonData.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return jsonData.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
-                let cls = 'text-green-400'; // number
-                if (/^"/.test(match)) {
-                    cls = /:$/.test(match) ? 'text-sky-300' : 'text-amber-300'; // key or string
-                } else if (/true|false/.test(match)) {
-                    cls = 'text-purple-400'; // boolean
-                } else if (/null/.test(match)) {
-                    cls = 'text-gray-500'; // null
-                }
+        const safeJsonParse = (str) => {
+            if (typeof str !== 'string' || !str.trim().startsWith('{')) return str;
+            try { return JSON.parse(str); } catch (e) { return str; }
+        };
+
+        const syntaxHighlight = (data) => {
+            if (data === null || data === undefined) return '<span class="text-gray-500">null</span>';
+            const parsedData = (typeof data === 'string') ? safeJsonParse(data) : data;
+            let jsonString = JSON.stringify(parsedData, undefined, 2);
+
+            jsonString = jsonString.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return jsonString.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+                let cls = 'text-green-400';
+                if (/^"/.test(match)) cls = /:$/.test(match) ? 'text-sky-300' : 'text-amber-300';
+                else if (/true|false/.test(match)) cls = 'text-purple-400';
+                else if (/null/.test(match)) cls = 'text-gray-500';
                 return `<span class="${cls}">${match}</span>`;
             });
+        };
+        
+        const generateDiff = (before, after) => {
+            const diff = Diff.createTwoFilesPatch('schema-before', 'schema-after', before || '', after || '', null, null, { context: 2 });
+            const lines = diff.split('\n').slice(4);
+            if (lines.every(line => !line.startsWith('+') && !line.startsWith('-'))) return '<div class="text-gray-500">No changes detected.</div>';
+            return lines.map(line => {
+                const escapedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                if (line.startsWith('+')) return `<span class="diff-line added">${escapedLine.substring(1)}</span>`;
+                if (line.startsWith('-')) return `<span class="diff-line removed">${escapedLine.substring(1)}</span>`;
+                if (line.startsWith('@@')) return `<span class="diff-line neutral font-bold">${escapedLine}</span>`;
+                return `<span class="diff-line neutral">${escapedLine}</span>`;
+            }).join('\n');
         };
 
         const showDetailsModal = (title, content) => {
             detailsModalContent.innerHTML = `<h2 class="text-2xl font-bold text-dark mb-6">${title}</h2>${content}`;
             detailsModal.classList.remove('hidden');
+            lucide.createIcons();
         };
 
         const closeDetailsModal = () => detailsModal.classList.add('hidden');
-        
+
         // --- Rendering Functions ---
         const renderStatus = (data) => {
             const container = document.getElementById('status-tab');
@@ -181,7 +422,7 @@
                         </div>
                     </div>`).join('')}
                 </div>
-                <div class="mt-8 bg-white p-6 rounded-xl shadow-md flex justify-between items-center">
+                <div class="mt-8 bg-white p-6 rounded-xl shadow-md flex justify-between items-center flex-wrap gap-4">
                     <div class="flex items-center space-x-4">
                         <div class="text-green-500">${renderIcon('shield-check', 'w-8 h-8')}</div>
                         <div>
@@ -194,225 +435,573 @@
                         <p class="font-mono text-lg font-semibold text-dark">${uptime.replace(/(\.\d{3})\d+/, '$1')}</p>
                     </div>
                 </div>`;
+             lucide.createIcons();
+        };
+        
+        const renderHardware = (data) => {
+            if (!data) return;
+
+            const { cgroup_limits, usage } = data;
+
+            // Allocation
+            const cpuCores = cgroup_limits.cpu_quota_cores;
+            document.getElementById('hw-cpu-allocation').innerHTML = `
+                <div class="flex items-center">
+                    ${renderIcon('cpu', 'w-5 h-5 mr-2 text-gray-500')}
+                    <span class="font-semibold">CPU Cores Allocated:</span>
+                    <span class="ml-2 font-mono text-lg font-bold text-dark">${cpuCores > 0 ? cpuCores.toFixed(2) : 'Unlimited'}</span>
+                </div>`;
+
+            const memLimit = cgroup_limits.memory_limit_bytes;
+            const memLimitText = (memLimit > 0 && memLimit < 1e18) ? formatBytes(memLimit) : 'Unlimited';
+             document.getElementById('hw-mem-allocation').innerHTML = `
+                <div class="flex items-center">
+                    ${renderIcon('memory-stick', 'w-5 h-5 mr-2 text-gray-500')}
+                    <span class="font-semibold">Memory Limit:</span>
+                    <span class="ml-2 font-mono text-lg font-bold text-dark">${memLimitText}</span>
+                </div>`;
+
+            // Usage
+            const cpuPercent = usage.cpu_total_usage_percent || 0;
+            document.getElementById('cpu-usage-percent').textContent = `${cpuPercent.toFixed(1)}%`;
+            document.getElementById('cpu-usage-bar').style.width = `${cpuPercent}%`;
+
+            const ramPercent = usage.ram_usage_percent || 0;
+            document.getElementById('ram-usage-text').textContent = `${formatBytes(usage.ram_used_bytes)} / ${formatBytes(usage.ram_total_bytes)}`;
+            document.getElementById('ram-usage-bar').style.width = `${ramPercent}%`;
+
+            document.getElementById('net-sent-text').textContent = `${formatBytes(usage.net_sent_bps || 0)}/s`;
+            document.getElementById('net-recv-text').textContent = `${formatBytes(usage.net_recv_bps || 0)}/s`;
+            document.getElementById('disk-write-text').textContent = `${formatBytes(usage.disk_write_bps || 0)}/s`;
+            document.getElementById('disk-read-text').textContent = `${formatBytes(usage.disk_read_bps || 0)}/s`;
+            
+            lucide.createIcons();
         };
 
         const renderServices = (data) => {
-            const container = document.getElementById('services-tab');
-            if (!data || (!Object.keys(data.main).length && !Object.keys(data.subgraphs).length)) {
+            const container = document.getElementById('services-container');
+            if (!data || Object.keys(data).length === 0) {
                 container.innerHTML = `<div class="text-center p-12 text-gray-500"><div class="text-3xl mb-4">${renderIcon('server-off')}</div>No services registered.</div>`;
+                lucide.createIcons();
                 return;
             }
-            const allSubgraphs = { 'main': data.main, ...data.subgraphs };
-            let html = Object.entries(allSubgraphs).map(([subgraphName, services]) => {
-                if (Object.keys(services).length === 0) return '';
-                return `
-                    <div>
-                        <h2 class="text-xl font-bold text-dark mb-4 pb-2 border-b-2 border-primary/20 capitalize flex items-center">
-                            ${renderIcon('box-select', 'w-6 h-6 mr-3 text-primary')} ${subgraphName} Subgraph
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            ${Object.entries(services).map(([serviceName, serviceData]) => `
-                                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-[1.02]">
-                                    <div class="bg-dark text-white p-4 flex justify-between items-center">
-                                        <h3 class="font-bold text-lg flex items-center">${renderIcon('cube', 'w-5 h-5 mr-2')}${serviceName}</h3>
-                                        <span class="bg-primary/50 text-white text-xs font-semibold px-3 py-1 rounded-full">${(serviceData.instances || []).length} Instances</span>
+
+            const servicesBySubgraph = {};
+            for (const serviceName in data) {
+                const instances = data[serviceName];
+                if (instances.length > 0) {
+                    const subgraph = instances[0].subgraph || 'main';
+                    if (!servicesBySubgraph[subgraph]) servicesBySubgraph[subgraph] = [];
+                    servicesBySubgraph[subgraph].push({ serviceName, instances });
+                }
+            }
+
+            container.innerHTML = `<div class="space-y-10">${Object.entries(servicesBySubgraph).map(([subgraphName, services]) => `
+                <div class="service-subgraph-group" data-subgraph-name="${subgraphName}">
+                    <h2 class="text-xl font-bold text-dark mb-4 pb-2 border-b-2 border-primary/20 capitalize flex items-center">
+                        ${renderIcon('box-select', 'w-6 h-6 mr-3 text-primary')} ${subgraphName} Subgraph
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        ${services.map(({ serviceName, instances }) => {
+                            const type = instances[0].type || 'unknown';
+                            const typeIcon = type === 'rest' ? 'at-sign' : 'box';
+                            const typeColor = type === 'rest' ? 'bg-amber-500' : 'bg-sky-500';
+                            return `
+                            <div class="service-card bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-[1.02]" data-service-name="${serviceName}">
+                                <div class="bg-dark text-white p-4 flex justify-between items-center">
+                                    <h3 class="font-bold text-lg flex items-center">${renderIcon('cube', 'w-5 h-5 mr-2')}${serviceName}</h3>
+                                    <div class="flex items-center gap-2">
+                                        <span class="${typeColor} text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">${renderIcon(typeIcon, 'w-3 h-3')} ${type}</span>
+                                        <span class="bg-primary/50 text-white text-xs font-semibold px-3 py-1 rounded-full">${instances.length} Instances</span>
                                     </div>
-                                    <div class="p-4 space-y-2">
-                                        ${(serviceData.instances || []).map(inst => `
-                                            <div class="flex items-center justify-between text-sm p-2 rounded-md bg-gray-50">
-                                                <span class="font-mono text-gray-600 truncate">${renderIcon('link-2', 'w-4 h-4 mr-2 inline-block text-gray-400')}${inst.URL}</span>
-                                                <div class="w-3 h-3 bg-secondary rounded-full flex-shrink-0 ml-4" title="Healthy"></div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>`).join('')}
-                        </div>
-                    </div>`;
-            }).join('');
-            container.innerHTML = `<div class="space-y-10">${html}</div>`;
-        };
-        
-        const renderPipelineSteps = (steps) => {
-            if (!steps || steps.length === 0) return '';
-            return `
-                <div class="flex flex-col md:flex-row items-stretch gap-4 overflow-x-auto pb-4">
-                    ${steps.map((step, index) => `
-                        <div class="flex-shrink-0 w-full md:w-64 bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary" 
-                                onclick='showPipelineStepDetails(${JSON.stringify(step)})'>
-                            <div class="flex justify-between items-center">
-                                <p class="font-bold text-dark flex items-center">${renderIcon('box', 'w-4 h-4 mr-2')}${step.service}</p>
-                                ${step.concurrent ? `<span class="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full" title="Concurrent">${renderIcon('zap', 'w-3 h-3 inline-block')}</span>` : ''}
-                            </div>
-                            <p class="font-mono text-sm text-gray-600 truncate">${step.field}</p>
-                            <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">${renderIcon('info', 'w-3 h-3 mr-1 inline')}Click for details</div>
-                        </div>
-                        ${index < steps.length - 1 ? `<div class="self-center text-gray-300 mx-4 hidden md:block">${renderIcon('chevron-right', 'w-8 h-8')}</div><div class="self-center text-gray-300 my-2 md:hidden">${renderIcon('chevron-down', 'w-8 h-8')}</div>` : ''}
-                    `).join('')}
-                </div>`;
+                                </div>
+                                <div class="p-4 space-y-2">
+                                    ${instances.map(inst => `
+                                        <div class="flex items-center justify-between text-sm p-2 rounded-md bg-gray-50">
+                                            <span class="font-mono text-gray-600 truncate" title="${inst.url}">${renderIcon('link-2', 'w-4 h-4 mr-2 inline-block text-gray-400')}${inst.url}</span>
+                                            <div class="w-3 h-3 bg-secondary rounded-full flex-shrink-0 ml-4" title="Healthy since ${new Date(inst.lastSeen).toLocaleString()}"></div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>`
+                        }).join('')}
+                    </div>
+                </div>`).join('')}</div>`;
+            lucide.createIcons();
+            applySearchFilter('service-search', '#services-container .service-card', 'serviceName', state.search.services);
         };
 
         const renderPipelines = (data) => {
-            const container = document.getElementById('pipelines-tab');
+            const container = document.getElementById('pipelines-container');
             if (!data || Object.keys(data).length === 0) {
                 container.innerHTML = `<div class="text-center p-12 text-gray-500"><div class="text-3xl mb-4">${renderIcon('milestone')}</div>No pipelines configured.</div>`;
+                lucide.createIcons();
                 return;
             }
+
+            const renderStep = (step, fieldKey, stepType, index) => `
+                <div class="flex-shrink-0 w-full md:w-64 bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary pipeline-step-details-btn" 
+                        data-pipeline-key="${fieldKey}" data-step-type="${stepType}" data-step-index="${index}">
+                    <div class="flex justify-between items-center">
+                        <p class="font-bold text-dark flex items-center">${renderIcon('box', 'w-4 h-4 mr-2')}${step.service}</p>
+                        ${step.concurrent ? `<span class="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full" title="Concurrent">${renderIcon('zap', 'w-3 h-3 inline-block')}</span>` : ''}
+                    </div>
+                    <p class="font-mono text-sm text-gray-600 truncate">${step.field || `${step.method} ${step.path}`}</p>
+                    <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">${renderIcon('info', 'w-3 h-3 mr-1 inline')}Click for details</div>
+                </div>`;
+
             container.innerHTML = Object.entries(data).map(([fieldKey, config]) => {
                 const hasPre = config.pre && config.pre.length > 0;
                 const hasPost = config.post && config.post.length > 0;
                 return `
-                <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                <div class="pipeline-card bg-white p-6 rounded-xl shadow-lg mb-8" data-pipeline-key="${fieldKey}">
                     <h3 class="text-xl font-bold text-dark flex items-center mb-4 border-b pb-3">
                         ${renderIcon('workflow', 'w-6 h-6 mr-3 text-primary')}Pipeline for: <span class="font-mono ml-2 p-1 bg-gray-100 rounded-md text-primary">${fieldKey}</span>
                     </h3>
                     ${hasPre ? `
                         <div class="mb-6">
                             <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">${renderIcon('log-in', 'w-5 h-5 mr-2 text-gray-500')}Pre-flight Steps</h4>
-                            ${renderPipelineSteps(config.pre)}
+                            <div class="flex flex-col md:flex-row items-stretch gap-4 overflow-x-auto pb-4">
+                                ${config.pre.map((step, index) => `
+                                    ${renderStep(step, fieldKey, 'pre', index)}
+                                    ${index < config.pre.length - 1 ? `<div class="self-center text-gray-300 mx-4 hidden md:block">${renderIcon('chevron-right', 'w-8 h-8')}</div><div class="self-center text-gray-300 my-2 md:hidden">${renderIcon('chevron-down', 'w-8 h-8')}</div>` : ''}
+                                `).join('')}
+                            </div>
                         </div>
                     ` : ''}
                     ${hasPost ? `
                         <div>
                             <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">${renderIcon('log-out', 'w-5 h-5 mr-2 text-gray-500')}Post-flight Enrichment</h4>
-                            ${renderPipelineSteps(config.post)}
+                            <div class="flex flex-col md:flex-row items-stretch gap-4 overflow-x-auto pb-4">
+                                ${config.post.map((step, index) => `
+                                    ${renderStep(step, fieldKey, 'post', index)}
+                                    ${index < config.post.length - 1 ? `<div class="self-center text-gray-300 mx-4 hidden md:block">${renderIcon('chevron-right', 'w-8 h-8')}</div><div class="self-center text-gray-300 my-2 md:hidden">${renderIcon('chevron-down', 'w-8 h-8')}</div>` : ''}
+                                `).join('')}
+                            </div>
                         </div>
                     ` : ''}
                 </div>`;
             }).join('');
-            window.showPipelineStepDetails = (step) => {
-                const content = `<pre class="bg-dark text-light p-4 rounded-md text-sm whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(step)}</code></pre>`;
-                showDetailsModal(`Pipeline Step: ${step.service}/${step.field}`, content);
-            };
+            
+            container.querySelectorAll('.pipeline-step-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const { pipelineKey, stepType, stepIndex } = e.currentTarget.dataset;
+                    const step = state.pipelines[pipelineKey]?.[stepType]?.[stepIndex];
+                    if (step) {
+                        const content = `<pre class="bg-dark text-light p-4 rounded-md text-sm whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(step)}</code></pre>`;
+                        showDetailsModal(`Pipeline Step: ${step.service}/${step.field || step.path}`, content);
+                    }
+                });
+            });
+
+            lucide.createIcons();
+            applySearchFilter('pipeline-search', '#pipelines-container .pipeline-card', 'pipelineKey', state.search.pipelines);
         };
         
-        const renderPipelineStepsInLog = (title, steps, colorClass = 'text-gray-300') => {
-            if (!steps || steps.length === 0) return '';
-            return `
-                <div class="mt-2">
-                    <strong class="${colorClass}">${title} (${steps.length})</strong>
-                    <div class="pl-4 mt-1 space-y-1">
-                        ${steps.map(step => `
-                            <div class="flex items-center text-xs">
-                                <span class="font-mono">${step.service}/${step.field}</span>
-                                ${step.concurrent ? `<span class="ml-2 text-xs font-bold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full" title="Concurrent">Async</span>` : ''}
-                                ${step.error ? `<span class="ml-2 text-red-400 truncate" title="${step.error}">- ${step.error}</span>` : ''}
-                            </div>`).join('')}
-                    </div>
-                </div>
-            `;
-        }
+        const attachLogDetailButtonListeners = (entryElement, logData) => {
+            const bindClick = (selector, title, dataProvider) => {
+                const button = entryElement.querySelector(selector);
+                if (button && dataProvider) {
+                    button.addEventListener('click', () => {
+                        const data = dataProvider();
+                        const content = `<pre class="bg-dark text-light p-4 rounded-md text-xs whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(data)}</code></pre>`;
+                        showDetailsModal(title, content);
+                    });
+                }
+            };
+        
+            switch(logData.log_type) {
+                case 'gateway':
+                    bindClick('.client-req-btn', 'Client Request', () => logData.client_request);
+                    bindClick('.client-res-btn', 'Client Response', () => logData.client_response);
+                    bindClick('.downstream-req-btn', 'Downstream Request', () => logData.downstream_request);
+                    bindClick('.downstream-res-btn', 'Downstream Response', () => logData.downstream_response);
+        
+                    entryElement.querySelectorAll('.pipeline-req-btn, .pipeline-res-btn').forEach(btn => {
+                        const { pStepType, pStepIndex } = btn.dataset;
+                        const step = logData[pStepType]?.[pStepIndex];
+                        if (step) {
+                            const isReq = btn.classList.contains('pipeline-req-btn');
+                            const title = `${isReq ? 'Request to' : 'Response from'} ${step.service}`;
+                            const data = isReq ? step.request : step.response;
+                            btn.addEventListener('click', () => {
+                                const content = `<pre class="bg-dark text-light p-4 rounded-md text-xs whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(data)}</code></pre>`;
+                                showDetailsModal(title, content);
+                            });
+                        }
+                    });
+                    break;
+                case 'schema':
+                    bindClick('.schema-req-btn', 'Triggering Request', () => logData.schema_change_info?.triggering_request);
+                    break;
+                case 'admin':
+                    bindClick('.admin-req-btn', 'Full Admin Request', () => logData.client_request);
+                    break;
+            }
+        };
 
-        const renderLogEntry = (logData) => {
-            const container = document.getElementById('log-container');
-            const { timestamp, request_address, destination_schema, failure_message, service_response, 
-                    pre_success_steps, pre_failure_steps, post_success_steps, post_failure_steps } = logData;
+        const renderLogEntry = (logData, logContainer) => {
+            const isLive = logContainer.id === 'live-log-container';
             
-            const isError = failure_message || (pre_failure_steps && pre_failure_steps.length > 0);
-            const colorClass = isError ? 'text-danger' : 'text-secondary';
-            const icon = isError ? renderIcon('x-circle', `w-4 h-4 mr-2 inline ${colorClass}`) : renderIcon('check-circle-2', `w-4 h-4 mr-2 inline ${colorClass}`);
+            if (isLive) {
+                if (state.live.logTypeFilter !== 'all' && logData.log_type !== state.live.logTypeFilter) return;
+                if (logData.log_type === 'gateway' && state.live.serviceFilter !== 'all' && !serviceInGatewayLog(logData, state.live.serviceFilter)) return;
+                if (logData.log_type === 'schema' && state.live.serviceFilter !== 'all' && state.serviceToSubgraphMap[logData.schema_name] !== state.live.serviceFilter) return;
+            }
             
-            const entry = document.createElement('div');
-            entry.className = 'log-entry py-2 border-b border-gray-700/50 text-sm cursor-pointer';
-            entry.onclick = () => entry.classList.toggle('open');
+            const { timestamp, trace_id, log_type, client_request, client_response, schema_name, activity, failure_message } = logData;
+            
+            let statusColor = 'border-gray-300';
+            let statusBgColor = isLive ? '' : 'bg-gray-50';
+            let statusIcon, mainTitle = 'Log Event';
 
-            let summary = 'SUCCESS';
-            if (isError) {
-                summary = 'FAILURE';
-            } else if (!timestamp) {
-                summary = 'SYSTEM';
+            switch(log_type) {
+                case 'gateway':
+                    const isError = failure_message || (client_response && client_response.status_code >= 400);
+                    statusColor = isError ? 'border-red-500' : 'border-green-500';
+                    statusBgColor = isLive ? '' : (isError ? 'bg-red-50' : 'bg-green-50');
+                    statusIcon = isError ? renderIcon('x-circle', 'w-5 h-5 text-red-500') : renderIcon('check-circle-2', 'w-5 h-5 text-green-500');
+                    mainTitle = `${client_request?.method || ''} ${client_request?.url || 'N/A'}`;
+                    break;
+                case 'schema':
+                    statusColor = 'border-blue-500';
+                    statusBgColor = isLive ? '' : 'bg-blue-50';
+                    statusIcon = renderIcon('file-cog', 'w-5 h-5 text-blue-500');
+                    mainTitle = `Schema change for: ${schema_name}`;
+                    break;
+                case 'admin':
+                    const isFailedAdmin = activity && activity.toLowerCase().includes('failed');
+                    statusColor = isFailedAdmin ? 'border-yellow-500' : 'border-purple-500';
+                    statusBgColor = isLive ? '' : (isFailedAdmin ? 'bg-yellow-50' : 'bg-purple-50');
+                    statusIcon = renderIcon('shield', 'w-5 h-5 text-purple-500');
+                    mainTitle = activity || 'Admin Activity';
+                    break;
+                 default:
+                    statusIcon = renderIcon('info', 'w-5 h-5 text-gray-500');
+                    mainTitle = logData.failure_message || "System Message";
+                    break;
             }
 
+            const entry = document.createElement('div');
+            entry.className = `log-entry group ${statusBgColor} border-l-4 ${statusColor} p-3 my-2 rounded-r-lg shadow-sm text-sm`;
             entry.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center">
-                        <span class="text-blue-400 font-mono">${new Date(timestamp || Date.now()).toLocaleTimeString()}</span>
-                        <span class="ml-4 font-mono text-gray-400">${request_address || 'UI'} &rarr; ${destination_schema || 'Stream'}</span>
+                <div class="flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="flex items-center overflow-hidden">
+                        ${statusIcon}
+                        <span class="ml-2 font-mono ${isLive ? 'text-blue-400' : 'text-primary'}">${new Date(timestamp || Date.now()).toLocaleString()}</span>
+                        <span class="ml-3 font-mono ${isLive ? 'text-gray-400' : 'text-gray-700'} truncate">${mainTitle}</span>
                     </div>
-                    <span class="${colorClass} font-bold flex items-center">${icon}${summary}</span>
+                    <div class="flex items-center">
+                        <span class="font-mono text-xs ${isLive ? 'text-gray-500' : 'text-gray-400'} mr-4" title="Trace ID">${trace_id || 'N/A'}</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-chevron text-gray-400 transition-transform"></i>
+                    </div>
                 </div>
                 <div class="collapsible-content">
-                    <div class="mt-2 pl-4 border-l-2 border-gray-600 text-gray-300 space-y-1">
-                        ${failure_message ? `<div class="font-mono text-red-400"><strong>Reason:</strong> ${failure_message}</div>` : ''}
-                        ${renderPipelineStepsInLog('Pre-flight Success', pre_success_steps, 'text-green-400')}
-                        ${renderPipelineStepsInLog('Pre-flight Failure', pre_failure_steps, 'text-red-400')}
-                        ${renderPipelineStepsInLog('Post-flight Success', post_success_steps, 'text-green-400')}
-                        ${renderPipelineStepsInLog('Post-flight Failure', post_failure_steps, 'text-red-400')}
-                        ${service_response ? `<div class="mt-2"><strong>Service Response:</strong><pre class="bg-gray-900 p-2 rounded mt-1 text-xs whitespace-pre-wrap"><code class="language-json">${syntaxHighlight(service_response)}</code></pre></div>` : ''}
+                    <div class="mt-3 pt-3 border-t ${isLive ? 'border-gray-700' : 'border-gray-200'} text-gray-800 space-y-3 details-container">
+                        ${renderLogDetails(logData)}
                     </div>
                 </div>`;
-            container.prepend(entry);
-            if(container.children.length > 200) container.removeChild(container.lastChild);
+            
+            attachLogDetailButtonListeners(entry, logData);
+            
+            if (isLive) {
+                logContainer.prepend(entry);
+                if (logContainer.children.length > 200) logContainer.removeChild(logContainer.lastChild);
+            } else {
+                logContainer.appendChild(entry);
+            }
+            lucide.createIcons();
         };
 
-        const renderAdminLogs = (logs) => {
-            const container = document.getElementById('admin-log-container');
-            if (!logs || logs.length === 0) {
-                 container.innerHTML = `<div class="text-center p-12 text-gray-500">${renderIcon('user-cog', 'w-10 h-10 mb-4 mx-auto')}No admin activities logged.</div>`;
-                 return;
+        const renderLogDetails = (logData) => {
+            switch(logData.log_type) {
+                case 'gateway': return renderGatewayLogDetails(logData);
+                case 'schema': return renderSchemaLogDetails(logData);
+                case 'admin': return renderAdminLogDetails(logData);
+                default: return `<div class="font-mono text-gray-500 p-2 bg-gray-100 rounded">${logData.failure_message || 'No details.'}</div>`;
             }
-            container.innerHTML = logs.map(log => `
-                <div class="py-3 border-b border-gray-200 text-sm flex items-center justify-between">
-                    <div>
-                        <span class="font-mono text-primary mr-4">${new Date(log.timestamp).toLocaleString()}</span>
-                        <span class="text-gray-600">${log.activity}</span>
+        };
+
+        const renderGatewayLogDetails = (logData) => {
+            const { failure_message, downstream_request } = logData;
+            
+            const renderPipelineStepsInLog = (title, steps, stepType, colorClass) => {
+                if (!steps || steps.length === 0) return '';
+                return `<div class="mt-3">
+                        <strong class="text-sm font-semibold ${colorClass}">${title} (${steps.length})</strong>
+                        <div class="pl-4 mt-1 space-y-2">
+                            ${steps.map((step, index) => `<div class="p-2 bg-gray-100 rounded-md border border-gray-200">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="font-mono font-semibold">${step.service}/${step.field || step.path}</span>
+                                    ${step.concurrent ? `<span class="ml-2 text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full" title="Concurrent">Async</span>` : ''}
+                                </div>
+                                ${step.error ? `<div class="mt-1 text-red-600 text-xs truncate" title="${step.error}"><strong>Error:</strong> ${step.error}</div>` : ''}
+                                <div class="mt-2">
+                                    <button class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded pipeline-req-btn" data-p-step-type="${stepType}" data-p-step-index="${index}">Req</button>
+                                    <button class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded ml-1 pipeline-res-btn" data-p-step-type="${stepType}" data-p-step-index="${index}">Res</button>
+                                </div>
+                            </div>`).join('')}
+                        </div>
+                    </div>`;
+            };
+
+            return `${failure_message ? `<div class="font-mono text-red-500 p-2 bg-red-100 rounded"><strong>Failure Reason:</strong> ${failure_message}</div>` : ''}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <strong class="text-sm font-semibold">Client Traffic</strong>
+                            <div class="flex gap-2 mt-1">
+                               <button class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 w-full text-left client-req-btn">Client Request</button>
+                               <button class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 w-full text-left client-res-btn">Client Response</button>
+                            </div>
+                        </div>
+                        ${downstream_request && downstream_request.url ? `
+                            <div>
+                                <strong class="text-sm font-semibold">Main Endpoint Execution</strong>
+                                <div class="flex gap-2 mt-1">
+                                    <button class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-md hover:bg-blue-200 w-full text-left downstream-req-btn">Downstream Req</button>
+                                    <button class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-md hover:bg-blue-200 w-full text-left downstream-res-btn">Downstream Res</button>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
-                    <span class="font-mono text-gray-400 text-xs">${log.user}</span>
-                </div>`).join('');
+                    ${renderPipelineStepsInLog('Pre-flight Success', logData.pre_success_steps, 'pre_success_steps', 'text-green-600')}
+                    ${renderPipelineStepsInLog('Pre-flight Failure', logData.pre_failure_steps, 'pre_failure_steps', 'text-red-600')}
+                    ${renderPipelineStepsInLog('Post-flight Success', logData.post_success_steps, 'post_success_steps', 'text-green-600')}
+                    ${renderPipelineStepsInLog('Post-flight Failure', logData.post_failure_steps, 'post_failure_steps', 'text-red-600')}
+                    ${renderPipelineStepsInLog('Rollback Success', logData.rollback_success, 'rollback_success', 'text-yellow-600')}
+                    ${renderPipelineStepsInLog('Rollback Failure', logData.rollback_failure, 'rollback_failure', 'text-red-600')}`;
         };
         
-        const renderSchemaLogs = (logs) => {
-            const container = document.getElementById('schema-log-container');
-            if (!logs || logs.length === 0) {
-                 container.innerHTML = `<div class="text-center p-12 text-gray-500">${renderIcon('file-text', 'w-10 h-10 mb-4 mx-auto')}No schema changes logged.</div>`;
-                 return;
+        const renderSchemaLogDetails = (logData) => {
+            const { schema_change_info } = logData;
+            if (!schema_change_info) return 'No schema change details available.';
+            
+            const diffHTML = generateDiff(schema_change_info.schema_before, schema_change_info.schema_after);
+
+            return `<div class="space-y-3">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                            <div class="p-2 bg-gray-100 rounded-md">
+                                <div class="text-xs text-gray-500">Triggered By</div>
+                                <div class="font-mono font-semibold">${schema_change_info.triggered_by || 'N/A'}</div>
+                            </div>
+                            <div class="p-2 bg-gray-100 rounded-md">
+                                <div class="text-xs text-gray-500">Change Detected</div>
+                                <div class="font-mono font-semibold">${schema_change_info.is_changed ? 'Yes' : 'No'}</div>
+                            </div>
+                             <div class="p-2 bg-gray-100 rounded-md">
+                                <div class="text-xs text-gray-500">New Version</div>
+                                <div class="font-mono font-semibold">v${schema_change_info.version || 'N/A'}</div>
+                            </div>
+                            <div class="p-2 ${schema_change_info.blue_green_swap ? 'bg-green-100' : 'bg-gray-100'} rounded-md">
+                                <div class="text-xs text-gray-500">Blue/Green Swap</div>
+                                <div class="font-mono font-semibold">${schema_change_info.blue_green_swap ? 'Success' : 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-md max-h-96 overflow-y-auto">
+                            <div class="font-mono text-sm p-2">${diffHTML}</div>
+                        </div>
+                        <div>
+                           <button class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 schema-req-btn">View Full Request</button>
+                        </div>
+                    </div>`;
+        };
+        
+        const renderAdminLogDetails = (logData) => {
+            const { admin_activity_info } = logData;
+            if (!admin_activity_info) return 'No admin activity details available.';
+            
+            return `<div class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="p-2 bg-gray-100 rounded-md">
+                                <div class="text-xs text-gray-500">Accessed By (IP)</div>
+                                <div class="font-mono font-semibold">${admin_activity_info.accessed_by || 'N/A'}</div>
+                            </div>
+                            <div class="p-2 bg-gray-100 rounded-md">
+                                <div class="text-xs text-gray-500">Token Used</div>
+                                <div class="font-mono font-semibold truncate">${admin_activity_info.token_used || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div>
+                           <button class="text-sm bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 admin-req-btn">View Full Request</button>
+                        </div>
+                    </div>`;
+        };
+
+        const renderHistoricalLogs = (logType) => {
+            const logState = state.logs[logType];
+            const contentEl = logSubTabContents[`${logType}-logs`];
+            const container = contentEl.querySelector('.historical-log-container');
+            const paginationContainer = contentEl.querySelector('.pagination-controls');
+            container.innerHTML = '';
+            paginationContainer.innerHTML = '';
+
+            const { logsPerPage } = logState;
+            const start = (logState.currentPage - 1) * logsPerPage;
+            const end = start + logsPerPage;
+            const paginatedLogs = logState.filtered.slice(start, end);
+
+            if (paginatedLogs.length === 0) {
+                container.innerHTML = `<div class="text-center p-12 text-gray-500">${renderIcon('search-x', 'w-10 h-10 mb-4 mx-auto')}No logs found for the selected criteria.</div>`;
+                lucide.createIcons();
+                return;
             }
-            container.innerHTML = logs.map(log => `
-                 <div class="py-3 border-b border-gray-200 text-sm flex items-center justify-between">
-                    <div>
-                        <span class="font-mono text-primary mr-4">${new Date(log.timestamp).toLocaleString()}</span>
-                        <span class="font-bold text-dark mr-2">${log.schema_name}:</span>
-                        <span class="text-gray-600">${log.schema_history}</span>
-                    </div>
-                </div>`).join('');
+
+            paginatedLogs.forEach(log => renderLogEntry(log, container));
+
+            const totalPages = Math.ceil(logState.filtered.length / logsPerPage);
+            paginationContainer.innerHTML = `
+                <div class="text-sm text-gray-600">Page ${logState.currentPage} of ${totalPages} (${logState.filtered.length} logs)</div>
+                <div class="flex items-center">
+                    <button ${logState.currentPage === 1 ? 'disabled' : ''} onclick="changePage('${logType}', ${logState.currentPage - 1})" class="px-3 py-1 border rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+                    <button ${logState.currentPage === totalPages ? 'disabled' : ''} onclick="changePage('${logType}', ${logState.currentPage + 1})" class="ml-2 px-3 py-1 border rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                </div>`;
+        };
+
+        window.changePage = (logType, page) => {
+            state.logs[logType].currentPage = page;
+            renderHistoricalLogs(logType);
+        };
+        
+        const serviceInGatewayLog = (log, serviceFilter) => {
+            if (state.serviceToSubgraphMap[log.subgraph] === serviceFilter) return true;
+            const pipelineSteps = [
+                ...(log.pre_success_steps || []), ...(log.pre_failure_steps || []),
+                ...(log.post_success_steps || []), ...(log.post_failure_steps || []),
+                ...(log.rollback_success || []), ...(log.rollback_failure || [])
+            ];
+            return pipelineSteps.some(step => state.serviceToSubgraphMap[step.service] === serviceFilter);
+        };
+
+        const applyHistoricalFilters = (logType) => {
+            const logState = state.logs[logType];
+            if (!logState) return;
+
+            const query = logState.query.toLowerCase();
+            const serviceFilter = logState.serviceFilter;
+
+            logState.filtered = logState.data.filter(log => {
+                const serviceMatch = (
+                    serviceFilter === 'all' ||
+                    logType === 'admin' ||
+                    (logType === 'schema' && state.serviceToSubgraphMap[log.schema_name] === serviceFilter) ||
+                    (logType === 'gateway' && serviceInGatewayLog(log, serviceFilter))
+                );
+
+                if (!serviceMatch) return false;
+                
+                if (!query) return true;
+                const logString = JSON.stringify(log).toLowerCase();
+                return logString.includes(query);
+            });
+            
+            logState.currentPage = 1;
+            renderHistoricalLogs(logType);
+        };
+
+        const fetchHistoricalLogs = async (logType) => {
+            const contentEl = logSubTabContents[`${logType}-logs`];
+            if (!contentEl) return;
+            const timeframe = contentEl.querySelector('.timeframe-selector').value;
+            const now = new Date();
+            let start;
+            switch (timeframe) {
+                case '5m': start = new Date(now.getTime() - 5 * 60 * 1000); break;
+                case '15m': start = new Date(now.getTime() - 15 * 60 * 1000); break;
+                case '1h': start = new Date(now.getTime() - 60 * 60 * 1000); break;
+                case '7d': start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+                case '24h':
+                default:
+                    start = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+            }
+
+            const logs = await apiFetch(`/logs/${logType}`, { start: start.toISOString(), end: now.toISOString(), max: 5000 });
+            state.logs[logType].data = (logs || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            applyHistoricalFilters(logType);
         };
 
         // --- Core Logic ---
         const fetchAllData = async () => {
-            const [services, pipelines, status, adminLogs, schemaLogs] = await Promise.all([
-                apiFetch('/service'),
-                apiFetch('/get-pipelines'),
+            const [services, pipelines, status, hardware] = await Promise.all([
+                apiFetch('/services'),
+                apiFetch('/pipelines'),
                 apiFetch('/gateway-status'),
-                apiFetch('/get-admin-logs?max=100'),
-                apiFetch('/get-schema-logs?max=100')
+                apiFetch('/hardware-stats')
             ]);
             
-            const newState = { services, pipelines, status, adminLogs, schemaLogs };
+            const newState = { services, pipelines, status, hardware };
 
             if (JSON.stringify(newState.status) !== JSON.stringify(oldState.status)) renderStatus(newState.status);
-            if (JSON.stringify(newState.services) !== JSON.stringify(oldState.services)) renderServices(newState.services);
-            if (JSON.stringify(newState.pipelines) !== JSON.stringify(oldState.pipelines)) renderPipelines(newState.pipelines);
-            if (JSON.stringify(newState.adminLogs) !== JSON.stringify(oldState.adminLogs)) renderAdminLogs(newState.adminLogs);
-            if (JSON.stringify(newState.schemaLogs) !== JSON.stringify(oldState.schemaLogs)) renderSchemaLogs(newState.schemaLogs);
+            if (JSON.stringify(newState.hardware) !== JSON.stringify(oldState.hardware)) renderHardware(newState.hardware);
             
-            oldState = JSON.parse(JSON.stringify(newState));
+            if (JSON.stringify(newState.services) !== JSON.stringify(oldState.services)) {
+                state.services = newState.services;
+                
+                if (state.services) {
+                    state.serviceToSubgraphMap = {}; 
+                    for (const serviceName in state.services) {
+                        if (state.services[serviceName].length > 0) {
+                            const subgraph = state.services[serviceName][0].subgraph || 'main';
+                            state.serviceToSubgraphMap[serviceName] = subgraph;
+                        }
+                    }
+                }
+
+                renderServices(state.services);
+                populateServiceFilters(state.services);
+            }
+            if (JSON.stringify(newState.pipelines) !== JSON.stringify(oldState.pipelines)) {
+                state.pipelines = newState.pipelines;
+                renderPipelines(state.pipelines);
+            }
+            
+            oldState = JSON.parse(JSON.stringify({services: newState.services, pipelines: newState.pipelines, status: newState.status}));
+            state.hardware = newState.hardware;
+        };
+        
+        const populateServiceFilters = (services) => {
+            if (!services) {
+                state.subgraphNames = [];
+                return;
+            }
+            state.subgraphNames = [...new Set(Object.values(services).flat().map(inst => inst.subgraph || 'main'))].sort();
+            
+            const optionsHTML = `<option value="all">All Subgraphs</option>` +
+                                state.subgraphNames.map(name => `<option value="${name}">${name}</option>`).join('');
+            
+            document.querySelectorAll('.service-name-filter').forEach(select => {
+                const logType = select.closest('.sub-tab-content')?.dataset.logType;
+                const previousValue = state.logs[logType]?.serviceFilter || 'all';
+                select.innerHTML = optionsHTML;
+                select.value = previousValue; 
+            });
+
+            const liveLogFilter = document.getElementById('live-log-service-filter');
+            liveLogFilter.innerHTML = optionsHTML;
+            liveLogFilter.value = state.live.serviceFilter;
         };
         
         const connectToLogStream = () => {
             if (logSocket) logSocket.close();
             const wsProtocol = config.gatewayUrl.startsWith('https') ? 'wss' : 'ws';
-            const wsUrl = `${wsProtocol}://${config.gatewayUrl.split('//')[1]}/live-log?token=${config.token}`;
+            const wsUrl = `${wsProtocol}://${config.gatewayUrl.split('//')[1]}/admin/logs/live?token=${config.token}`;
             logSocket = new WebSocket(wsUrl);
 
             logSocket.onopen = () => {
-                document.getElementById('log-container').innerHTML = '';
-                renderLogEntry({ failure_message: "Connection established." });
+                const logContainer = document.getElementById('live-log-container');
+                logContainer.innerHTML = '';
+                renderLogEntry({ failure_message: "Live log stream connected."}, logContainer);
             };
             logSocket.onmessage = (event) => {
-                try { renderLogEntry(JSON.parse(event.data)); } catch (e) { console.error("Error parsing log data:", e); }
+                try { 
+                    renderLogEntry(JSON.parse(event.data), document.getElementById('live-log-container')); 
+                } catch (e) { 
+                    console.error("Error parsing log data:", e); 
+                }
             };
             logSocket.onclose = () => {
-                if (!document.getElementById('login-modal').classList.contains('hidden')) return; // Don't try to reconnect if we are logged out
-                renderLogEntry({ failure_message: "Connection closed. Attempting to reconnect..."});
+                if (!sessionStorage.getItem('gatewayConfig')) return;
+                const logContainer = document.getElementById('live-log-container');
+                renderLogEntry({ failure_message: "Connection closed. Reconnecting..."}, logContainer);
                 setTimeout(connectToLogStream, 3000);
             };
             logSocket.onerror = (error) => {
@@ -426,11 +1015,13 @@
             mainContent.classList.remove('hidden');
             
             fetchAllData();
-            fetchInterval = setInterval(fetchAllData, 3000); // Fetch data every 3 seconds
+            fetchInterval = setInterval(fetchAllData, 2000);
             connectToLogStream();
-
+            
             tabs[0].classList.add('active');
             tabContents[0].classList.remove('hidden');
+            subTabs[0].classList.add('active');
+            logSubTabContents['live-logs'].classList.remove('hidden');
             document.getElementById('logout-button').addEventListener('click', logout);
             lucide.createIcons();
         };
@@ -438,7 +1029,7 @@
         const showLoginModal = () => {
             clearInterval(fetchInterval);
             if(logSocket) {
-                logSocket.onclose = null; // prevent reconnect attempts
+                logSocket.onclose = null;
                 logSocket.close();
             }
             mainContent.classList.add('hidden');
@@ -452,6 +1043,15 @@
             sessionStorage.removeItem('gatewayConfig');
             config = { gatewayUrl: '', token: '' };
             showLoginModal();
+        };
+
+        const applySearchFilter = (inputId, cardSelector, dataAttribute, value) => {
+            document.getElementById(inputId).value = value;
+            const searchTerm = value.toLowerCase();
+            document.querySelectorAll(cardSelector).forEach(card => {
+                const name = card.dataset[dataAttribute].toLowerCase();
+                card.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
         };
 
         // --- Event Listeners ---
@@ -475,14 +1075,92 @@
             });
         });
 
+        subTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                subTabs.forEach(t => t.classList.remove('active'));
+                Object.values(logSubTabContents).forEach(c => c.classList.add('hidden'));
+                
+                tab.classList.add('active');
+                const subtabName = tab.dataset.subtab;
+                const contentEl = logSubTabContents[subtabName];
+                contentEl.classList.remove('hidden');
+                
+                if (subtabName !== 'live-logs') {
+                    const logType = contentEl.dataset.logType;
+                    if (logType && state.logs[logType].data.length === 0) {
+                        fetchHistoricalLogs(logType);
+                    }
+                }
+                lucide.createIcons();
+            });
+        });
+        
+        document.querySelectorAll('.historical-controls').forEach(controls => {
+            const logType = controls.parentElement.dataset.logType;
+            if(!logType) return;
+
+            controls.querySelector('.timeframe-selector').addEventListener('change', () => fetchHistoricalLogs(logType));
+            
+            const serviceFilter = controls.querySelector('.service-name-filter');
+            if (serviceFilter) {
+                serviceFilter.addEventListener('change', (e) => {
+                    state.logs[logType].serviceFilter = e.target.value;
+                    applyHistoricalFilters(logType);
+                });
+            }
+
+            controls.querySelector('.keyword-search').addEventListener('input', (e) => {
+                clearTimeout(debounceTimers[logType]);
+                debounceTimers[logType] = setTimeout(() => {
+                    state.logs[logType].query = e.target.value;
+                    applyHistoricalFilters(logType);
+                }, 300);
+            });
+
+            const refreshButton = controls.querySelector('.refresh-logs-btn');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', () => fetchHistoricalLogs(logType));
+            }
+        });
+
+        document.getElementById('live-log-type-filter').addEventListener('change', (e) => {
+            state.live.logTypeFilter = e.target.value;
+            const serviceFilterEl = document.getElementById('live-log-service-filter');
+            const showServiceFilter = e.target.value === 'gateway' || e.target.value === 'schema';
+            serviceFilterEl.classList.toggle('hidden', !showServiceFilter);
+            
+            state.live.serviceFilter = 'all';
+            serviceFilterEl.value = 'all';
+        });
+
+        document.getElementById('live-log-service-filter').addEventListener('change', (e) => {
+            state.live.serviceFilter = e.target.value;
+        });
+
+        document.getElementById('service-search').addEventListener('input', (e) => {
+            state.search.services = e.target.value;
+            applySearchFilter('service-search', '#services-container .service-card', 'serviceName', state.search.services);
+        });
+
+        document.getElementById('pipeline-search').addEventListener('input', (e) => {
+            state.search.pipelines = e.target.value;
+            applySearchFilter('pipeline-search', '#pipelines-container .pipeline-card', 'pipelineKey', state.search.pipelines);
+        });
+
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedConfig = sessionStorage.getItem('gatewayConfig');
             if (savedConfig) {
-                config = JSON.parse(savedConfig);
-                document.getElementById('gateway-url').value = config.gatewayUrl;
-                document.getElementById('token').value = config.token;
-                startApp();
+                try {
+                    config = JSON.parse(savedConfig);
+                    document.getElementById('gateway-url').value = config.gatewayUrl;
+                    document.getElementById('token').value = config.token;
+                    startApp();
+                } catch (e) {
+                    console.error("Failed to parse saved config", e);
+                    sessionStorage.removeItem('gatewayConfig');
+                    showLoginModal();
+                }
             } else {
                 showLoginModal();
             }
